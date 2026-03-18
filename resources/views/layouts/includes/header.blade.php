@@ -88,12 +88,9 @@
 
                             <div class="dropdown-divider"></div>
 
-                            <form method="POST" action="{{ url('/auth/logout') }}">
-                                @csrf
-                                <button type="submit" class="dropdown-item">
-                                    <i class="ti-lock text-faded me-2"></i> Sair
-                                </button>
-                            </form>
+                           <a class="dropdown-item" href="{{ url('/auth/logout') }}">
+                                <i class="ti-lock text-faded me-2"></i> Sair
+                            </a>
                         </li>
                     </ul>
                 </li>
