@@ -19,7 +19,11 @@ class LoginController extends Controller
             return $this->redirectAutenticado($request);
         }
 
-        return view('auth.login.index');
+        $returnurl = (string) $request->query('returnurl', '');
+
+        return view('auth.login.index', [
+            'returnurl' => $returnurl,
+        ]);
     }
 
     public function autenticar(Request $request): RedirectResponse
@@ -40,13 +44,13 @@ class LoginController extends Controller
 
         if (! $colaborador || ! Hash::check($request->senha, $colaborador->senha)) {
             return back()
-                ->withInput($request->only('cpf'))
+                ->withInput($request->only('cpf', 'returnurl'))
                 ->with('error', 'CPF ou senha inválidos.');
         }
 
         if (! $colaborador->permissao || (int) $colaborador->permissao->situacao !== 1) {
             return back()
-                ->withInput($request->only('cpf'))
+                ->withInput($request->only('cpf', 'returnurl'))
                 ->with('error', 'Usuário sem permissão ativa para acessar o sistema.');
         }
 
@@ -84,7 +88,7 @@ class LoginController extends Controller
 
     protected function resolveRedirectAfterLogin(Request $request, Colaborador $user): RedirectResponse
     {
-        $returnUrl = (string) $request->query('returnurl', '');
+        $returnUrl = (string) $request->input('returnurl', $request->query('returnurl', ''));
 
         if ($this->isSafeInternalPath($returnUrl)) {
             return redirect($returnUrl);
