@@ -273,7 +273,7 @@ class EmpresaFilialController extends Controller
         if (!$cnae) {
             return response()->json([
                 'success' => false,
-                'message' => 'CNAE não encontrado.',
+                'message' => 'CNAE não encontrado na base local. Cadastre ou importe o CNAE antes de vincular.',
             ], 422);
         }
 
@@ -561,23 +561,25 @@ class EmpresaFilialController extends Controller
         $cnaePrincipal = null;
 
         if (!empty($payload['cnae_principal'])) {
-            $cnaePrincipal = EmpresaCnae::query()->firstOrCreate(
-                ['subclasse' => $this->normalizeCnae((string) $payload['cnae_principal'])],
-                [
-                    'descricao' => 'CNAE importado via API',
-                ]
-            );
+            $subclassePrincipal = $this->normalizeCnae((string) $payload['cnae_principal']);
+
+            $cnaePrincipal = EmpresaCnae::query()
+                ->where('subclasse', $subclassePrincipal)
+                ->first(['id', 'subclasse', 'descricao']);
         }
 
         $cnaesSecundarios = [];
 
         foreach (($payload['cnaes_secundarios'] ?? []) as $subclasse) {
-            $cnaesSecundarios[] = EmpresaCnae::query()->firstOrCreate(
-                ['subclasse' => $this->normalizeCnae((string) $subclasse)],
-                [
-                    'descricao' => 'CNAE importado via API',
-                ]
-            );
+            $subclasseNormalizada = $this->normalizeCnae((string) $subclasse);
+
+            $cnae = EmpresaCnae::query()
+                ->where('subclasse', $subclasseNormalizada)
+                ->first(['id', 'subclasse', 'descricao']);
+
+            if ($cnae) {
+                $cnaesSecundarios[] = $cnae;
+            }
         }
 
         return [
