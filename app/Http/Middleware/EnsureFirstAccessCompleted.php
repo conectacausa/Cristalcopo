@@ -15,19 +15,15 @@ class EnsureFirstAccessCompleted
     {
         $user = auth()->user();
 
-        // Se não houver usuário autenticado, deixa o fluxo seguir
-        // para a middleware auth tratar.
         if (! $user) {
             return $next($request);
         }
 
-        // Como foi definido no projeto, a senha pode ser nula
-        // até o usuário concluir o primeiro acesso.
         if (empty($user->senha)) {
             auth()->logout();
 
             return redirect()
-                ->route('auth.acesso.index')
+                ->route('auth.acesso')
                 ->with('warning', 'Você precisa concluir o primeiro acesso antes de entrar no sistema.');
         }
 
