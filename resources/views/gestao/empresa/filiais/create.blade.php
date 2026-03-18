@@ -704,6 +704,23 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     }
 
+    function ensureSelectOption(selectEl, value, label) {
+        if (!value) {
+            return;
+        }
+
+        const exists = Array.from(selectEl.options).some(function (option) {
+            return String(option.value) === String(value);
+        });
+
+        if (!exists) {
+            const option = document.createElement('option');
+            option.value = String(value);
+            option.textContent = label || String(value);
+            selectEl.appendChild(option);
+        }
+    }
+
     function setSelectValue(selectEl, value) {
         selectEl.value = value ? String(value) : '';
 
@@ -1025,6 +1042,7 @@ document.addEventListener('DOMContentLoaded', function () {
             }
 
             if (refs.pais) {
+                ensureSelectOption(paisSelect, refs.pais.id, refs.pais.nome || 'País');
                 setSelectValue(paisSelect, refs.pais.id);
                 await loadEstados(refs.pais.id, refs.estado ? refs.estado.id : null);
             }
@@ -1179,6 +1197,7 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     if (oldPaisId) {
+        ensureSelectOption(paisSelect, oldPaisId, paisSelect.options[paisSelect.selectedIndex] ? paisSelect.options[paisSelect.selectedIndex].text : 'País');
         loadEstados(oldPaisId, oldEstadoId).then(function () {
             if (oldEstadoId) {
                 loadCidades(oldEstadoId, oldCidadeId);
