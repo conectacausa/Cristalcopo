@@ -1,37 +1,72 @@
-@extends('layouts.app')
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
 
-@section('content')
+  <title>Cristalcopo - CBO</title>
 
-<div class="content-header">
-    <div class="d-flex align-items-center">
-        <div class="me-auto">
+  <link rel="stylesheet" href="{{ asset('assets/css/vendors_css.css') }}">
+  <link rel="stylesheet" href="{{ asset('assets/css/style.css') }}">
+  <link rel="stylesheet" href="{{ asset('assets/css/skin_color.css') }}">
+</head>
+
+<body class="hold-transition light-skin sidebar-mini theme-primary fixed">
+
+<div class="wrapper">
+
+  {{-- HEADER --}}
+  @include('layouts.includes.header')
+
+  {{-- MENU --}}
+  @include('layouts.includes.menu')
+
+  <div class="content-wrapper">
+    <div class="container-full">
+
+      <div class="content-header">
+        <div class="d-flex align-items-center">
+          <div class="me-auto">
             <h4 class="page-title">CBO</h4>
+          </div>
+
+          <button onclick="abrirNovo()" class="btn bg-gradient-success w-200">
+            Novo CBO
+          </button>
         </div>
-        <button onclick="abrirNovo()" class="btn bg-gradient-success w-200">Novo CBO</button>
+      </div>
+
+      <section class="content">
+
+        {{-- FILTRO --}}
+        <div class="box">
+          <div class="box-body">
+            <input type="text" id="filtro" class="form-control" placeholder="Descrição ou Código">
+          </div>
+        </div>
+
+        {{-- TABELA --}}
+        <div class="box">
+          <div class="box-body">
+            <div id="tabela"></div>
+          </div>
+        </div>
+
+      </section>
+
     </div>
+  </div>
+
+  {{-- FOOTER --}}
+  @include('layouts.includes.footer')
+
 </div>
 
-<section class="content">
-
-<div class="box">
-    <div class="box-body">
-        <input type="text" id="filtro" class="form-control" placeholder="Descrição ou Código">
-    </div>
-</div>
-
-<div class="box">
-    <div class="box-body">
-        <div id="tabela"></div>
-    </div>
-</div>
-
-</section>
+<script src="{{ asset('assets/js/vendors.min.js') }}"></script>
+<script src="{{ asset('assets/vendor_components/sweetalert/sweetalert.min.js') }}"></script>
+<script src="{{ asset('assets/js/template.js') }}"></script>
 
 @include('gestao.cargos.cbo.partials.modal')
-
-@endsection
-
-@section('scripts')
 
 <script>
 let filtroTimer;
@@ -103,4 +138,5 @@ $(document).ready(function () {
 });
 </script>
 
-@endsection
+</body>
+</html>
