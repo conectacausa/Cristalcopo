@@ -14,8 +14,14 @@ class EmpresaFilial extends Model
     protected $fillable = [
         'razao_social',
         'cnpj',
-        'nome_fantasia',
+        'nome_fantasia'
     ];
+
+    /*
+    |--------------------------------------------------------------------------
+    | ACCESSOR PADRÃO
+    |--------------------------------------------------------------------------
+    */
 
     public function getNomeAttribute()
     {
