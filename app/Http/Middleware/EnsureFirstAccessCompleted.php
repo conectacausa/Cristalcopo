@@ -20,9 +20,7 @@ class EnsureFirstAccessCompleted
         }
 
         if (empty($user->senha)) {
-            return redirect()
-                ->route('auth.acesso')
-                ->with('warning', 'Você precisa concluir o primeiro acesso antes de entrar no sistema.');
+            return redirect()->route('auth.acesso');
         }
 
         return $next($request);
