@@ -25,7 +25,7 @@ Route::prefix('auth')->group(function () {
     });
 });
 
-Route::middleware(['auth', 'first.access.completed'])->group(function () {
+Route::middleware(['auth', 'user.active', 'first.access.completed'])->group(function () {
     Route::get('/dashboard', function () {
         return 'Dashboard (logado)';
     })->name('dashboard');
