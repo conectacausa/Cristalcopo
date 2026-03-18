@@ -10,26 +10,12 @@ use Symfony\Component\HttpFoundation\Response;
 
 class EnsureUserCanAccessScreen
 {
-    /**
-     * Handle an incoming request.
-     */
     public function handle(Request $request, Closure $next, string $screenSlug): Response
     {
         $user = auth()->user();
 
         if (! $user) {
             return redirect()->route('auth.login');
-        }
-
-        if ((int) $user->situacao !== 1) {
-            auth()->logout();
-
-            $request->session()->invalidate();
-            $request->session()->regenerateToken();
-
-            return redirect()
-                ->route('auth.login')
-                ->with('error', 'Seu usuário está inativo e não pode acessar o sistema.');
         }
 
         if (empty($user->permissao_id)) {
@@ -41,7 +27,7 @@ class EnsureUserCanAccessScreen
             ->first();
 
         if (! $tela) {
-            abort(403, 'Tela não cadastrada na gestão de acessos.');
+            abort(403, 'Tela não cadastrada.');
         }
 
         $hasAccess = VinculoPermissaoXTela::query()
