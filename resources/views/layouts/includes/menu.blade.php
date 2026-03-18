@@ -4,6 +4,11 @@
 
     $usuario = Auth::user();
     $permissaoId = $usuario?->permissao_id;
+    $currentPath = request()->path();
+
+    $normalizarCaminho = function ($caminho) {
+        return trim($caminho ?? '', '/');
+    };
 
     $modulosMenu = collect();
 
@@ -20,9 +25,7 @@
             ->orderBy('m.ordem')
             ->orderBy('m.nome_modulo')
             ->get()
-            ->map(function ($modulo) use ($permissaoId) {
-
-                // GRUPOS
+            ->map(function ($modulo) use ($permissaoId, $normalizarCaminho, $currentPath) {
                 $grupos = DB::table('gestao_grupo_tela as g')
                     ->select('g.id', 'g.nome_grupo', 'g.icone', 'g.ordem')
                     ->where('g.modulo_id', $modulo->id)
@@ -37,8 +40,7 @@
                     ->orderBy('g.ordem')
                     ->orderBy('g.nome_grupo')
                     ->get()
-                    ->map(function ($grupo) use ($permissaoId) {
-
+                    ->map(function ($grupo) use ($permissaoId, $normalizarCaminho, $currentPath) {
                         $grupo->telas = DB::table('gestao_tela as t')
                             ->select('t.id', 't.nome_tela', 't.slug', 't.icone', 't.ordem')
                             ->join('vinculo_tela_x_grupo as vtg', 'vtg.tela_id', '=', 't.id')
@@ -48,12 +50,19 @@
                             ->orderBy('t.ordem')
                             ->orderBy('t.nome_tela')
                             ->distinct()
-                            ->get();
+                            ->get()
+                            ->map(function ($tela) use ($normalizarCaminho, $currentPath) {
+                                $tela->is_active = $normalizarCaminho($tela->slug) === $normalizarCaminho($currentPath);
+                                return $tela;
+                            });
+
+                        $grupo->is_open = $grupo->telas->contains(function ($tela) {
+                            return $tela->is_active;
+                        });
 
                         return $grupo;
                     });
 
-                // TELAS SEM GRUPO
                 $telasIndividuais = DB::table('gestao_tela as t')
                     ->select('t.id', 't.nome_tela', 't.slug', 't.icone', 't.ordem')
                     ->join('vinculo_permissao_x_tela as vpt', 'vpt.tela_id', '=', 't.id')
@@ -64,7 +73,11 @@
                     ->orderBy('t.ordem')
                     ->orderBy('t.nome_tela')
                     ->distinct()
-                    ->get();
+                    ->get()
+                    ->map(function ($tela) use ($normalizarCaminho, $currentPath) {
+                        $tela->is_active = $normalizarCaminho($tela->slug) === $normalizarCaminho($currentPath);
+                        return $tela;
+                    });
 
                 $modulo->grupos = $grupos;
                 $modulo->telas_individuais = $telasIndividuais;
@@ -82,14 +95,12 @@
 
                     @forelse($modulosMenu as $modulo)
 
-                        {{-- HEADER DO MÓDULO (EXCETO ID 1) --}}
                         @if($modulo->id != 1)
                             <li class="header">{{ $modulo->nome_modulo }}</li>
                         @endif
 
-                        {{-- TELAS SEM GRUPO --}}
                         @foreach($modulo->telas_individuais as $tela)
-                            <li title="{{ $tela->nome_tela }}">
+                            <li title="{{ $tela->nome_tela }}" class="{{ $tela->is_active ? 'active' : '' }}">
                                 <a href="{{ url($tela->slug) }}">
                                     <i data-feather="{{ !empty($tela->icone) ? $tela->icone : 'circle' }}"></i>
                                     <span>{{ $tela->nome_tela }}</span>
@@ -97,10 +108,9 @@
                             </li>
                         @endforeach
 
-                        {{-- GRUPOS --}}
                         @foreach($modulo->grupos as $grupo)
                             @if($grupo->telas->count() > 0)
-                                <li class="treeview">
+                                <li class="treeview {{ $grupo->is_open ? 'menu-open active' : '' }}">
                                     <a href="#">
                                         <i data-feather="{{ !empty($grupo->icone) ? $grupo->icone : 'grid' }}"></i>
                                         <span>{{ $grupo->nome_grupo }}</span>
@@ -109,9 +119,9 @@
                                         </span>
                                     </a>
 
-                                    <ul class="treeview-menu">
+                                    <ul class="treeview-menu" style="{{ $grupo->is_open ? 'display: block;' : '' }}">
                                         @foreach($grupo->telas as $tela)
-                                            <li>
+                                            <li class="{{ $tela->is_active ? 'active' : '' }}">
                                                 <a href="{{ url($tela->slug) }}">
                                                     <i class="icon-Commit">
                                                         <span class="path1"></span>
