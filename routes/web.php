@@ -4,6 +4,7 @@ use App\Http\Controllers\Auth\AcessoController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Gestao\Empresa\EmpresaFilialController;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\CargoCboController;
 
 Route::get('/', function () {
     return auth()->check()
@@ -57,4 +58,11 @@ Route::middleware(['auth', 'user.active'])->group(function () {
             Route::patch('/cnaes/{vinculoId}/principal', [EmpresaFilialController::class, 'atualizarPrincipalCnae'])->name('cnae.principal');
             Route::delete('/cnaes/{vinculoId}', [EmpresaFilialController::class, 'removerCnae'])->name('cnae.remover');
         });
+    Route::middleware(['auth', 'screen:cargos/cbo'])->group(function () {
+        Route::get('/cargos/cbo', [CargoCboController::class, 'index']);
+        Route::get('/cargos/cbo/list', [CargoCboController::class, 'list']);
+        Route::post('/cargos/cbo/store', [CargoCboController::class, 'store']);
+        Route::post('/cargos/cbo/update/{id}', [CargoCboController::class, 'update']);
+        Route::delete('/cargos/cbo/delete/{id}', [CargoCboController::class, 'delete']);
+    });
 });
