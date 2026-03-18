@@ -9,24 +9,28 @@
 <header class="main-header">
     <div class="d-flex align-items-center logo-box justify-content-start">
         <a href="{{ url('/auth/redirect') }}" class="logo">
-            <div class="logo-mini w-30">
-                <span class="light-logo">
-                    <img src="{{ asset('assets/images/logo-letter.png') }}" alt="logo">
-                </span>
-                <span class="dark-logo">
-                    <img src="{{ asset('assets/images/logo-letter.png') }}" alt="logo">
-                </span>
-            </div>
 
-            <div class="logo-lg">
-                <span class="light-logo">
-                    <img src="{{ asset('assets/images/logo-dark-text.png') }}" alt="logo">
-                </span>
-                <span class="dark-logo">
-                    <img src="{{ asset('assets/images/logo-light-text.png') }}" alt="logo">
-                </span>
-            </div>
-        </a>
+    <!-- LOGO MINI (menu recolhido) -->
+    <div class="logo-mini w-30">
+        <span class="light-logo">
+            <img src="{{ asset('assets/images/sistema/logo-q.png') }}" alt="logo">
+        </span>
+        <span class="dark-logo">
+            <img src="{{ asset('assets/images/sistema/logo-b-q.png') }}" alt="logo">
+        </span>
+    </div>
+
+    <!-- LOGO GRANDE -->
+    <div class="logo-lg">
+        <span class="light-logo">
+            <img src="{{ asset('assets/images/sistema/logo.png') }}" alt="logo">
+        </span>
+        <span class="dark-logo">
+            <img src="{{ asset('assets/images/sistema/logo-b.png') }}" alt="logo">
+        </span>
+    </div>
+
+</a>
     </div>
 
     <nav class="navbar navbar-static-top">
