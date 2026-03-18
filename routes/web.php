@@ -47,5 +47,10 @@ Route::middleware(['auth', 'user.active'])->group(function () {
 
             Route::get('/ajax/estados/{paisId}', [EmpresaFilialController::class, 'estadosPorPais'])->name('estados');
             Route::get('/ajax/cidades/{estadoId}', [EmpresaFilialController::class, 'cidadesPorEstado'])->name('cidades');
+
+            Route::get('/ajax/porte', [EmpresaFilialController::class, 'buscarPorte'])->name('porte');
+            Route::get('/ajax/natureza', [EmpresaFilialController::class, 'buscarNatureza'])->name('natureza');
+            Route::get('/ajax/cnae', [EmpresaFilialController::class, 'buscarCnae'])->name('cnae');
+            Route::get('/ajax/consultar-cnpj', [EmpresaFilialController::class, 'consultarCnpj'])->name('consultar-cnpj');
         });
 });
