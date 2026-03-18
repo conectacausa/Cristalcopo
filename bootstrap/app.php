@@ -18,6 +18,10 @@ return Application::configure(basePath: dirname(__DIR__))
             return route('auth.login');
         });
 
+        $middleware->redirectUsersTo(function (Request $request) {
+            return route('auth.redirect');
+        });
+
         $middleware->alias([
             'user.active' => EnsureUserIsActive::class,
             'screen' => EnsureUserCanAccessScreen::class,
