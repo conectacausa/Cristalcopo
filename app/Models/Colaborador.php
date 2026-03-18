@@ -2,10 +2,10 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
+use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
-class Colaborador extends Model
+class Colaborador extends Authenticatable
 {
     use SoftDeletes;
 
@@ -22,15 +22,19 @@ class Colaborador extends Model
 
     protected $hidden = [
         'senha',
+        'remember_token',
     ];
 
-    protected $casts = [
-        'data_nascimento' => 'date',
-        'situacao' => 'boolean',
-    ];
-
-    public function permissao()
+    protected function casts(): array
     {
-        return $this->belongsTo(GestaoPermissao::class, 'permissao_id');
+        return [
+            'data_nascimento' => 'date',
+            'situacao' => 'boolean',
+        ];
+    }
+
+    public function getAuthPassword(): string
+    {
+        return $this->senha;
     }
 }
