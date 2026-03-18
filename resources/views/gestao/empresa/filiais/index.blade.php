@@ -82,7 +82,9 @@
                                         @forelse($filiais as $filial)
                                             <tr>
                                                 <td>{{ $filial->nome_fantasia }}</td>
-                                                <td>{{ \App\Helpers\DocumentoHelper::cnpj($filial->cnpj) }}</td>
+                                                <td>
+                                                    {{ preg_replace('/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/', '$1.$2.$3/$4-$5', $filial->cnpj) }}
+                                                </td>
                                                 <td align="center">
                                                     <div class="clearfix d-flex justify-content-center gap-2">
                                                         <a href="{{ route('empresa.filiais.edit', $filial->id) }}"
@@ -141,7 +143,6 @@
     document.addEventListener('DOMContentLoaded', function () {
         const campoBusca = document.getElementById('campo-busca');
         const formFiltro = document.getElementById('form-filtro');
-
         let debounceTimer = null;
 
         if (campoBusca && formFiltro) {
@@ -172,6 +173,7 @@
                     closeOnConfirm: true
                 }, function () {
                     const form = document.getElementById('form-excluir-' + id);
+
                     if (form) {
                         form.submit();
                     }
