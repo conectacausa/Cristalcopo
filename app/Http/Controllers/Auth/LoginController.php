@@ -94,16 +94,24 @@ class LoginController extends Controller
             return redirect($returnUrl);
         }
 
-        $slug = $user->permissao?->loginTela?->slug;
+        $slug = $this->normalizeSlug($user->permissao?->loginTela?->slug);
 
         if (! empty($slug) && $this->userHasAccessToSlug($user->permissao_id, $slug)) {
-            return redirect('/' . ltrim($slug, '/'));
+            if ($slug === 'dashboard') {
+                return redirect()->route('dashboard');
+            }
+
+            return redirect('/' . $slug);
         }
 
-        $firstAllowedSlug = $this->firstAllowedSlug($user->permissao_id);
+        $firstAllowedSlug = $this->normalizeSlug($this->firstAllowedSlug($user->permissao_id));
 
         if (! empty($firstAllowedSlug)) {
-            return redirect('/' . ltrim($firstAllowedSlug, '/'));
+            if ($firstAllowedSlug === 'dashboard') {
+                return redirect()->route('dashboard');
+            }
+
+            return redirect('/' . $firstAllowedSlug);
         }
 
         abort(403, 'Nenhuma tela autorizada foi encontrada para esta permissão.');
@@ -118,7 +126,8 @@ class LoginController extends Controller
         return VinculoPermissaoXTela::query()
             ->where('permissao_id', $permissaoId)
             ->whereHas('tela', function ($query) use ($slug) {
-                $query->where('slug', $slug);
+                $query->where('slug', $slug)
+                    ->orWhere('slug', '/' . $slug);
             })
             ->exists();
     }
@@ -136,6 +145,21 @@ class LoginController extends Controller
             ->first();
 
         return $vinculo?->tela?->slug;
+    }
+
+    protected function normalizeSlug(?string $slug): ?string
+    {
+        if ($slug === null) {
+            return null;
+        }
+
+        $slug = trim($slug);
+
+        if ($slug === '') {
+            return null;
+        }
+
+        return ltrim($slug, '/');
     }
 
     protected function isSafeInternalPath(string $path): bool
