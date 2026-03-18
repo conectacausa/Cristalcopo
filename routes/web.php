@@ -6,7 +6,7 @@ use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
     return auth()->check()
-        ? redirect()->route('dashboard')
+        ? redirect()->route('auth.redirect')
         : redirect()->route('auth.login');
 })->name('home');
 
@@ -22,8 +22,9 @@ Route::prefix('auth')->group(function () {
         Route::view('/recuperar', 'auth.recuperar.index')->name('auth.recuperar');
     });
 
-    Route::middleware('auth')->group(function () {
+    Route::middleware(['auth', 'user.active'])->group(function () {
         Route::get('/logout', [LoginController::class, 'logout'])->name('auth.logout');
+        Route::get('/redirect', [LoginController::class, 'redirectAutenticado'])->name('auth.redirect');
     });
 });
 
