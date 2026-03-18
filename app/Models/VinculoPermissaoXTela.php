@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class VinculoPermissaoXTela extends Model
 {
@@ -12,4 +13,14 @@ class VinculoPermissaoXTela extends Model
         'permissao_id',
         'tela_id',
     ];
+
+    public function permissao(): BelongsTo
+    {
+        return $this->belongsTo(GestaoPermissao::class, 'permissao_id');
+    }
+
+    public function tela(): BelongsTo
+    {
+        return $this->belongsTo(GestaoTela::class, 'tela_id');
+    }
 }
