@@ -48,9 +48,13 @@ Route::middleware(['auth', 'user.active'])->group(function () {
             Route::get('/ajax/estados/{paisId}', [EmpresaFilialController::class, 'estadosPorPais'])->name('estados');
             Route::get('/ajax/cidades/{estadoId}', [EmpresaFilialController::class, 'cidadesPorEstado'])->name('cidades');
 
-            Route::get('/ajax/porte', [EmpresaFilialController::class, 'buscarPorte'])->name('porte');
-            Route::get('/ajax/natureza', [EmpresaFilialController::class, 'buscarNatureza'])->name('natureza');
-            Route::get('/ajax/cnae', [EmpresaFilialController::class, 'buscarCnae'])->name('cnae');
-            Route::get('/ajax/consultar-cnpj', [EmpresaFilialController::class, 'consultarCnpj'])->name('consultar-cnpj');
+            Route::get('/ajax/porte/{codigo}', [EmpresaFilialController::class, 'buscarPortePorCodigo'])->name('porte.buscar');
+            Route::get('/ajax/natureza/{codigo}', [EmpresaFilialController::class, 'buscarNaturezaPorCodigo'])->name('natureza.buscar');
+            Route::get('/ajax/cnae/{subclasse}', [EmpresaFilialController::class, 'buscarCnaePorSubclasse'])->name('cnae.buscar');
+            Route::get('/ajax/cnpj/{cnpj}', [EmpresaFilialController::class, 'consultarCnpj'])->name('cnpj.consultar');
+
+            Route::post('/{filialId}/cnaes', [EmpresaFilialController::class, 'adicionarCnae'])->name('cnae.adicionar');
+            Route::patch('/cnaes/{vinculoId}/principal', [EmpresaFilialController::class, 'atualizarPrincipalCnae'])->name('cnae.principal');
+            Route::delete('/cnaes/{vinculoId}', [EmpresaFilialController::class, 'removerCnae'])->name('cnae.remover');
         });
 });
