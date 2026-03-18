@@ -21,6 +21,8 @@
             ->orderBy('m.nome_modulo')
             ->get()
             ->map(function ($modulo) use ($permissaoId) {
+
+                // GRUPOS
                 $grupos = DB::table('gestao_grupo_tela as g')
                     ->select('g.id', 'g.nome_grupo', 'g.icone', 'g.ordem')
                     ->where('g.modulo_id', $modulo->id)
@@ -36,6 +38,7 @@
                     ->orderBy('g.nome_grupo')
                     ->get()
                     ->map(function ($grupo) use ($permissaoId) {
+
                         $grupo->telas = DB::table('gestao_tela as t')
                             ->select('t.id', 't.nome_tela', 't.slug', 't.icone', 't.ordem')
                             ->join('vinculo_tela_x_grupo as vtg', 'vtg.tela_id', '=', 't.id')
@@ -50,6 +53,7 @@
                         return $grupo;
                     });
 
+                // TELAS SEM GRUPO
                 $telasIndividuais = DB::table('gestao_tela as t')
                     ->select('t.id', 't.nome_tela', 't.slug', 't.icone', 't.ordem')
                     ->join('vinculo_permissao_x_tela as vpt', 'vpt.tela_id', '=', 't.id')
@@ -75,9 +79,15 @@
         <div class="multinav">
             <div class="multinav-scroll" style="height: 100%;">
                 <ul class="sidebar-menu" data-widget="tree">
-                    @forelse($modulosMenu as $modulo)
-                        <li class="header">{{ $modulo->nome_modulo }}</li>
 
+                    @forelse($modulosMenu as $modulo)
+
+                        {{-- HEADER DO MÓDULO (EXCETO ID 1) --}}
+                        @if($modulo->id != 1)
+                            <li class="header">{{ $modulo->nome_modulo }}</li>
+                        @endif
+
+                        {{-- TELAS SEM GRUPO --}}
                         @foreach($modulo->telas_individuais as $tela)
                             <li title="{{ $tela->nome_tela }}">
                                 <a href="{{ url($tela->slug) }}">
@@ -87,6 +97,7 @@
                             </li>
                         @endforeach
 
+                        {{-- GRUPOS --}}
                         @foreach($modulo->grupos as $grupo)
                             @if($grupo->telas->count() > 0)
                                 <li class="treeview">
@@ -114,6 +125,7 @@
                                 </li>
                             @endif
                         @endforeach
+
                     @empty
                         <li class="header">MENU</li>
                         <li>
@@ -123,6 +135,7 @@
                             </a>
                         </li>
                     @endforelse
+
                 </ul>
             </div>
         </div>
