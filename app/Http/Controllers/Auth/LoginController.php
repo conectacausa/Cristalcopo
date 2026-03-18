@@ -4,131 +4,146 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Models\Colaborador;
+use App\Models\VinculoPermissaoXTela;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\View\View;
 
 class LoginController extends Controller
 {
-    public function index(Request $request)
+    public function index(Request $request): View|RedirectResponse
     {
-        if (session()->has('colaborador_id')) {
-            return $this->redirectAfterLogin($request, session('colaborador_id'));
+        if (Auth::check()) {
+            return $this->redirectAutenticado($request);
         }
 
-        return view('auth.login.index', [
-            'returnurl' => $request->query('returnurl'),
-        ]);
+        return view('auth.login.index');
     }
 
-    public function autenticar(Request $request)
+    public function autenticar(Request $request): RedirectResponse
     {
         $request->validate([
             'cpf' => ['required', 'string'],
-            'senha' => ['nullable', 'string'],
-            'lembrar' => ['nullable'],
-            'returnurl' => ['nullable', 'string'],
-        ], [
-            'cpf.required' => 'Informe o CPF.',
+            'senha' => ['required', 'string'],
         ]);
 
-        $cpf = preg_replace('/\D/', '', $request->cpf);
+        $cpf = preg_replace('/\D/', '', (string) $request->cpf);
 
-        $colaboradores = Colaborador::with('permissao.loginTela')
+        $colaborador = Colaborador::query()
+            ->with(['permissao.loginTela'])
             ->where('cpf', $cpf)
             ->where('situacao', 1)
-            ->get();
+            ->whereNotNull('senha')
+            ->first();
 
-        if ($colaboradores->isEmpty()) {
+        if (! $colaborador || ! Hash::check($request->senha, $colaborador->senha)) {
             return back()
-                ->withInput($request->except('senha'))
-                ->withErrors([
-                    'cpf' => 'CPF ou senha inválidos.',
-                ]);
+                ->withInput($request->only('cpf'))
+                ->with('error', 'CPF ou senha inválidos.');
         }
 
-        $colaboradorValido = null;
-
-        foreach ($colaboradores as $colaborador) {
-            if (empty($colaborador->senha)) {
-                continue;
-            }
-
-            if (Hash::check($request->senha ?? '', $colaborador->senha)) {
-                $colaboradorValido = $colaborador;
-                break;
-            }
-        }
-
-        if (!$colaboradorValido) {
+        if (! $colaborador->permissao || (int) $colaborador->permissao->situacao !== 1) {
             return back()
-                ->withInput($request->except('senha'))
-                ->withErrors([
-                    'cpf' => 'CPF ou senha inválidos.',
-                ]);
+                ->withInput($request->only('cpf'))
+                ->with('error', 'Usuário sem permissão ativa para acessar o sistema.');
         }
 
-        if (
-            !$colaboradorValido->permissao ||
-            !$colaboradorValido->permissao->situacao
-        ) {
-            return back()
-                ->withInput($request->except('senha'))
-                ->withErrors([
-                    'cpf' => 'Sua permissão de acesso está inativa.',
-                ]);
-        }
-
-        session([
-            'colaborador_id' => $colaboradorValido->id,
-            'colaborador_nome' => $colaboradorValido->nome_completo,
-            'permissao_id' => $colaboradorValido->permissao_id,
-        ]);
-
-        if ($request->boolean('lembrar')) {
-            session()->put('login_lembrar', true);
-        } else {
-            session()->forget('login_lembrar');
-        }
-
+        Auth::login($colaborador, $request->boolean('lembrar'));
         $request->session()->regenerate();
 
-        return $this->redirectAfterLogin($request, $colaboradorValido->id);
+        return $this->resolveRedirectAfterLogin($request, $colaborador);
     }
 
-    public function logout(Request $request)
+    public function redirectAutenticado(Request $request): RedirectResponse
     {
-        $request->session()->invalidate();
-        $request->session()->regenerateToken();
+        /** @var \App\Models\Colaborador|null $user */
+        $user = Auth::user();
 
-        return redirect()->route('auth.login');
-    }
-
-    private function redirectAfterLogin(Request $request, int $colaboradorId)
-    {
-        $colaborador = Colaborador::with('permissao.loginTela')->find($colaboradorId);
-
-        if (!$colaborador) {
-            $request->session()->flush();
+        if (! $user) {
             return redirect()->route('auth.login');
         }
 
-        $returnurl = $request->query('returnurl') ?? $request->input('returnurl');
+        $user->loadMissing(['permissao.loginTela']);
 
-        if (!empty($returnurl) && $this->isSafeInternalReturnUrl($returnurl)) {
-            return redirect($returnurl);
+        return $this->resolveRedirectAfterLogin($request, $user);
+    }
+
+    public function logout(Request $request): RedirectResponse
+    {
+        Auth::logout();
+
+        $request->session()->invalidate();
+        $request->session()->regenerateToken();
+
+        return redirect()
+            ->route('auth.login')
+            ->with('success', 'Logout realizado com sucesso.');
+    }
+
+    protected function resolveRedirectAfterLogin(Request $request, Colaborador $user): RedirectResponse
+    {
+        $returnUrl = (string) $request->query('returnurl', '');
+
+        if ($this->isSafeInternalPath($returnUrl)) {
+            return redirect($returnUrl);
         }
 
-        $slug = optional(optional($colaborador->permissao)->loginTela)->slug;
+        $slug = $user->permissao?->loginTela?->slug;
 
-        if (!empty($slug)) {
+        if (! empty($slug) && $this->userHasAccessToSlug($user->permissao_id, $slug)) {
             return redirect('/' . ltrim($slug, '/'));
         }
 
-        return redirect('/');
+        $firstAllowedSlug = $this->firstAllowedSlug($user->permissao_id);
+
+        if (! empty($firstAllowedSlug)) {
+            return redirect('/' . ltrim($firstAllowedSlug, '/'));
+        }
+
+        abort(403, 'Nenhuma tela autorizada foi encontrada para esta permissão.');
     }
 
-    private function isSafeInternalReturnUrl(string $url): bool
+    protected function userHasAccessToSlug(?int $permissaoId, string $slug): bool
     {
-        return str_starts_with($url, '/') && !str_starts_with($url, '//');
+        if (empty($permissaoId) || empty($slug)) {
+            return false;
+        }
+
+        return VinculoPermissaoXTela::query()
+            ->where('permissao_id', $permissaoId)
+            ->whereHas('tela', function ($query) use ($slug) {
+                $query->where('slug', $slug);
+            })
+            ->exists();
+    }
+
+    protected function firstAllowedSlug(?int $permissaoId): ?string
+    {
+        if (empty($permissaoId)) {
+            return null;
+        }
+
+        $vinculo = VinculoPermissaoXTela::query()
+            ->with('tela')
+            ->where('permissao_id', $permissaoId)
+            ->orderBy('id')
+            ->first();
+
+        return $vinculo?->tela?->slug;
+    }
+
+    protected function isSafeInternalPath(string $path): bool
+    {
+        if ($path === '') {
+            return false;
+        }
+
+        if (! str_starts_with($path, '/')) {
+            return false;
+        }
+
+        return ! str_starts_with($path, '//');
     }
 }
