@@ -28,12 +28,6 @@
                             </div>
 
                             <div class="p-40">
-                                @if ($errors->any())
-                                    <div class="alert alert-danger mb-3">
-                                        {{ $errors->first() }}
-                                    </div>
-                                @endif
-
                                 <form action="{{ route('auth.login.autenticar') }}" method="post" autocomplete="on">
                                     @csrf
 
@@ -137,6 +131,39 @@
                 });
 
                 cpfInput.value = aplicarMascaraCPF(cpfInput.value);
+            }
+
+            if (typeof toastr !== 'undefined') {
+                toastr.options = {
+                    "closeButton": true,
+                    "progressBar": true,
+                    "positionClass": "toast-top-right",
+                    "timeOut": "5000",
+                    "extendedTimeOut": "1500",
+                    "preventDuplicates": true
+                };
+
+                @if ($errors->any())
+                    @foreach ($errors->all() as $erro)
+                        toastr.error(@json($erro));
+                    @endforeach
+                @endif
+
+                @if (session('success'))
+                    toastr.success(@json(session('success')));
+                @endif
+
+                @if (session('error'))
+                    toastr.error(@json(session('error')));
+                @endif
+
+                @if (session('warning'))
+                    toastr.warning(@json(session('warning')));
+                @endif
+
+                @if (session('info'))
+                    toastr.info(@json(session('info')));
+                @endif
             }
         });
     </script>
