@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Middleware\EnsureFirstAccessCompleted;
+use App\Http\Middleware\EnsureFirstAccessPending;
 use App\Http\Middleware\EnsureUserIsActive;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
@@ -19,8 +20,9 @@ return Application::configure(basePath: dirname(__DIR__))
         });
 
         $middleware->alias([
-            'first.access.completed' => EnsureFirstAccessCompleted::class,
             'user.active' => EnsureUserIsActive::class,
+            'first.access.completed' => EnsureFirstAccessCompleted::class,
+            'first.access.pending' => EnsureFirstAccessPending::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
