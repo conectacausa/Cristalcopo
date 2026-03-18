@@ -13,6 +13,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
 class EmpresaFilialController extends Controller
@@ -29,30 +30,20 @@ class EmpresaFilialController extends Controller
             ]);
 
         if ($request->filled('busca')) {
-            $busca = trim($request->string('busca')->toString());
+            $busca = trim((string) $request->input('busca'));
+            $buscaNumerica = $this->onlyNumbers($busca);
 
-            $query->where(function ($q) use ($busca) {
-                $q->where('razao_social', 'like', "%{$busca}%")
-                    ->orWhere('nome_fantasia', 'like', "%{$busca}%")
-                    ->orWhere('cnpj', 'like', "%{$busca}%")
-                    ->orWhere('email', 'like', "%{$busca}%");
+            $query->where(function ($q) use ($busca, $buscaNumerica) {
+                $q->where('razao_social', 'like', "%{$busca}%");
+
+                if (!empty($buscaNumerica)) {
+                    $q->orWhere('cnpj', 'like', "%{$buscaNumerica}%");
+                }
             });
         }
 
-        if ($request->filled('situacao')) {
-            $situacao = $request->input('situacao');
-
-            if ($situacao !== '') {
-                $query->where('situacao', (bool) $situacao);
-            }
-        }
-
-        if ($request->filled('tipo')) {
-            $query->where('tipo', $request->input('tipo'));
-        }
-
         $filiais = $query
-            ->orderBy('razao_social')
+            ->orderBy('nome_fantasia')
             ->paginate(15)
             ->withQueryString();
 
@@ -96,7 +87,7 @@ class EmpresaFilialController extends Controller
         EmpresaFilial::create($validated);
 
         return redirect()
-            ->route('gestao.empresa.filiais.index')
+            ->route('empresa.filiais.index')
             ->with('success', 'Filial cadastrada com sucesso.');
     }
 
@@ -154,7 +145,7 @@ class EmpresaFilialController extends Controller
         $filial->update($validated);
 
         return redirect()
-            ->route('gestao.empresa.filiais.index')
+            ->route('empresa.filiais.index')
             ->with('success', 'Filial atualizada com sucesso.');
     }
 
@@ -164,7 +155,7 @@ class EmpresaFilialController extends Controller
         $filial->delete();
 
         return redirect()
-            ->route('gestao.empresa.filiais.index')
+            ->route('empresa.filiais.index')
             ->with('success', 'Filial removida com sucesso.');
     }
 
@@ -204,11 +195,9 @@ class EmpresaFilialController extends Controller
             'natureza_juridica_id' => ['required', 'integer', 'exists:empresa_nat_juridica,id'],
             'tipo' => ['required', Rule::in(['matriz', 'filial'])],
             'situacao' => ['required', 'boolean'],
-
             'telefone1' => ['nullable', 'string', 'max:20'],
             'telefone2' => ['nullable', 'string', 'max:20'],
             'email' => ['nullable', 'email', 'max:150'],
-
             'logradouro' => ['nullable', 'string', 'max:200'],
             'numero' => ['nullable', 'string', 'max:20'],
             'bairro' => ['nullable', 'string', 'max:150'],
@@ -273,11 +262,9 @@ class EmpresaFilialController extends Controller
             'natureza_juridica_id' => $request->input('natureza_juridica_id'),
             'tipo' => $request->input('tipo'),
             'situacao' => filter_var($request->input('situacao'), FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE),
-
             'telefone1' => $this->nullableString($this->onlyNumbers($request->input('telefone1'))),
             'telefone2' => $this->nullableString($this->onlyNumbers($request->input('telefone2'))),
             'email' => $this->nullableString(mb_strtolower(trim((string) $request->input('email')))),
-
             'logradouro' => $this->nullableString(trim((string) $request->input('logradouro'))),
             'numero' => $this->nullableString(trim((string) $request->input('numero'))),
             'bairro' => $this->nullableString(trim((string) $request->input('bairro'))),
@@ -297,12 +284,9 @@ class EmpresaFilialController extends Controller
             ->first();
 
         if (!$estado) {
-            abort(
-                redirect()
-                    ->back()
-                    ->withInput()
-                    ->withErrors(['estado_id' => 'O estado informado não pertence ao país selecionado.'])
-            );
+            throw ValidationException::withMessages([
+                'estado_id' => 'O estado informado não pertence ao país selecionado.',
+            ]);
         }
 
         $cidade = GestaoCidade::query()
@@ -311,12 +295,9 @@ class EmpresaFilialController extends Controller
             ->first();
 
         if (!$cidade) {
-            abort(
-                redirect()
-                    ->back()
-                    ->withInput()
-                    ->withErrors(['cidade_id' => 'A cidade informada não pertence ao estado selecionado.'])
-            );
+            throw ValidationException::withMessages([
+                'cidade_id' => 'A cidade informada não pertence ao estado selecionado.',
+            ]);
         }
     }
 
