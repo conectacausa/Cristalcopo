@@ -24,7 +24,7 @@
                     </div>
                 </div>
 
-                <a href="{{ route('gestao.empresa.filiais.create') }}"
+                <a href="{{ route('empresa.filiais.create') }}"
                    class="waves-effect waves-light btn mb-5 bg-gradient-success w-200">
                     Nova Empresa
                 </a>
@@ -39,7 +39,7 @@
                             <h4 class="box-title">Filtros</h4>
                         </div>
                         <div class="box-body">
-                            <form id="form-filtro" method="GET" action="{{ route('gestao.empresa.filiais.index') }}">
+                            <form id="form-filtro" method="GET" action="{{ route('empresa.filiais.index') }}">
                                 <div class="row">
                                     <div class="col-md-12">
                                         <div class="form-group">
@@ -85,7 +85,7 @@
                                                 <td>{{ \App\Helpers\DocumentoHelper::cnpj($filial->cnpj) }}</td>
                                                 <td align="center">
                                                     <div class="clearfix d-flex justify-content-center gap-2">
-                                                        <a href="{{ route('gestao.empresa.filiais.edit', $filial->id) }}"
+                                                        <a href="{{ route('empresa.filiais.edit', $filial->id) }}"
                                                            class="waves-effect waves-light btn mb-5 bg-gradient-primary"
                                                            title="Editar">
                                                             <i class="fa fa-edit"></i>
@@ -103,7 +103,7 @@
 
                                                         <form
                                                             id="form-excluir-{{ $filial->id }}"
-                                                            action="{{ route('gestao.empresa.filiais.destroy', $filial->id) }}"
+                                                            action="{{ route('empresa.filiais.destroy', $filial->id) }}"
                                                             method="POST"
                                                             style="display: none;"
                                                         >
