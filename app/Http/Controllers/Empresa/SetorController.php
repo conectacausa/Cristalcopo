@@ -20,25 +20,33 @@ class SetorController extends Controller
     {
         $query = Setor::with('filiais');
 
-        if ($request->nome) {
+        if ($request->filled('nome')) {
             $query->where('nome', 'ilike', '%' . $request->nome . '%');
         }
 
-        if ($request->filial_id) {
-            $query->whereHas('filiais', function ($q) use ($request) {
-                $q->where('empresa_filial.id', $request->filial_id);
+        if ($request->filled('filial_id')) {
+            $filialId = $request->filial_id;
+
+            $query->whereHas('filiais', function ($q) use ($filialId) {
+                $q->where('empresa_filial.id', $filialId);
             });
         }
 
-        $dados = $query->paginate(25);
+        $dados = $query->orderBy('nome')->paginate(25);
 
         return view('gestao.empresa.setor.partials.table', compact('dados'))->render();
     }
 
     public function store(Request $request)
     {
+        $request->validate([
+            'nome' => 'required|string|max:255',
+            'filiais' => 'nullable|array',
+            'filiais.*' => 'integer',
+        ]);
+
         $setor = Setor::create([
-            'nome' => $request->nome
+            'nome' => $request->nome,
         ]);
 
         $setor->filiais()->sync($request->filiais ?? []);
@@ -48,10 +56,16 @@ class SetorController extends Controller
 
     public function update(Request $request, $id)
     {
+        $request->validate([
+            'nome' => 'required|string|max:255',
+            'filiais' => 'nullable|array',
+            'filiais.*' => 'integer',
+        ]);
+
         $setor = Setor::findOrFail($id);
 
         $setor->update([
-            'nome' => $request->nome
+            'nome' => $request->nome,
         ]);
 
         $setor->filiais()->sync($request->filiais ?? []);
@@ -61,7 +75,8 @@ class SetorController extends Controller
 
     public function delete($id)
     {
-        Setor::findOrFail($id)->delete();
+        $setor = Setor::findOrFail($id);
+        $setor->delete();
 
         return response()->json(['success' => true]);
     }
