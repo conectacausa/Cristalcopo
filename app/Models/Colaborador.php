@@ -2,8 +2,9 @@
 
 namespace App\Models;
 
-use Illuminate\Foundation\Auth\User as Authenticatable;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Foundation\Auth\User as Authenticatable;
 
 class Colaborador extends Authenticatable
 {
@@ -35,6 +36,11 @@ class Colaborador extends Authenticatable
 
     public function getAuthPassword(): string
     {
-        return $this->senha;
+        return $this->senha ?? '';
+    }
+
+    public function permissao(): BelongsTo
+    {
+        return $this->belongsTo(GestaoPermissao::class, 'permissao_id');
     }
 }
