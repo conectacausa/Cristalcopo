@@ -1,68 +1,111 @@
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
 
-  <title>Cristalcopo - CBO</title>
+    <title>Cristalcopo - CBO</title>
 
-  <link rel="stylesheet" href="{{ asset('assets/css/vendors_css.css') }}">
-  <link rel="stylesheet" href="{{ asset('assets/css/style.css') }}">
-  <link rel="stylesheet" href="{{ asset('assets/css/skin_color.css') }}">
+    <!-- CSS -->
+    <link rel="stylesheet" href="{{ asset('assets/css/vendors_css.css') }}">
+    <link rel="stylesheet" href="{{ asset('assets/css/style.css') }}">
+    <link rel="stylesheet" href="{{ asset('assets/css/skin_color.css') }}">
 </head>
 
 <body class="hold-transition light-skin sidebar-mini theme-primary fixed">
 
 <div class="wrapper">
 
-  {{-- HEADER --}}
-  @include('layouts.includes.header')
+    <div id="loader"></div>
 
-  {{-- MENU --}}
-  @include('layouts.includes.menu')
+    {{-- HEADER --}}
+    @include('layouts.includes.header')
 
-  <div class="content-wrapper">
-    <div class="container-full">
+    {{-- MENU --}}
+    @include('layouts.includes.menu')
 
-      <div class="content-header">
-        <div class="d-flex align-items-center">
-          <div class="me-auto">
-            <h4 class="page-title">CBO</h4>
-          </div>
+    <!-- Content Wrapper -->
+    <div class="content-wrapper">
+        <div class="container-full">
 
-          <button onclick="abrirNovo()" class="btn bg-gradient-success w-200">
-            Novo CBO
-          </button>
+            <!-- Header -->
+            <div class="content-header">
+                <div class="d-flex align-items-center">
+                    <div class="me-auto">
+                        <h4 class="page-title">CBO</h4>
+
+                        <div class="d-inline-block align-items-center">
+                            <nav>
+                                <ol class="breadcrumb">
+                                    <li class="breadcrumb-item">
+                                        <a href="#"><i class="mdi mdi-home-outline"></i></a>
+                                    </li>
+                                    <li class="breadcrumb-item">Cargos</li>
+                                    <li class="breadcrumb-item active">CBO</li>
+                                </ol>
+                            </nav>
+                        </div>
+                    </div>
+
+                    <button type="button" onclick="abrirNovo()" class="waves-effect waves-light btn mb-5 bg-gradient-success w-200">
+                        Novo CBO
+                    </button>
+                </div>
+            </div>
+
+            <!-- Content -->
+            <section class="content">
+
+                <!-- Filtros -->
+                <div class="row">
+                    <div class="col-12">
+                        <div class="box">
+                            <div class="box-header with-border">
+                                <h4 class="box-title">Filtros</h4>
+                            </div>
+
+                            <div class="box-body">
+                                <div class="form-group">
+                                    <label class="form-label">Descrição ou Código</label>
+                                    <input type="text" id="filtro" class="form-control" placeholder="Descrição ou Código">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tabela -->
+                <div class="row">
+                    <div class="col-12">
+                        <div class="box">
+                            <div class="box-header with-border">
+                                <h4 class="box-title">CBO</h4>
+                            </div>
+
+                            <div class="box-body">
+                                <div class="table-responsive" id="tabela">
+                                    <!-- AJAX -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </section>
+
         </div>
-      </div>
-
-      <section class="content">
-
-        {{-- FILTRO --}}
-        <div class="box">
-          <div class="box-body">
-            <input type="text" id="filtro" class="form-control" placeholder="Descrição ou Código">
-          </div>
-        </div>
-
-        {{-- TABELA --}}
-        <div class="box">
-          <div class="box-body">
-            <div id="tabela"></div>
-          </div>
-        </div>
-
-      </section>
-
     </div>
-  </div>
 
-  {{-- FOOTER --}}
-  @include('layouts.includes.footer')
+    {{-- FOOTER --}}
+    @include('layouts.includes.footer')
 
 </div>
 
+<!-- JS -->
 <script src="{{ asset('assets/js/vendors.min.js') }}"></script>
+<script src="{{ asset('assets/js/pages/chat-popup.js') }}"></script>
+<script src="{{ asset('assets/icons/feather-icons/feather.min.js') }}"></script>
 <script src="{{ asset('assets/vendor_components/sweetalert/sweetalert.min.js') }}"></script>
 <script src="{{ asset('assets/js/template.js') }}"></script>
 
