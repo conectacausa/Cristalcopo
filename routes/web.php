@@ -5,7 +5,9 @@ use App\Http\Controllers\Auth\LoginController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
-    return redirect()->route('dashboard');
+    return auth()->check()
+        ? redirect()->route('dashboard')
+        : redirect()->route('auth.login');
 })->name('home');
 
 Route::prefix('auth')->group(function () {
@@ -16,10 +18,11 @@ Route::prefix('auth')->group(function () {
         Route::view('/recuperar', 'auth.recuperar.index')->name('auth.recuperar');
     });
 
-    // Primeiro acesso NÃO deve ficar em guest
-    Route::get('/acesso', [AcessoController::class, 'index'])->name('auth.acesso');
-    Route::post('/acesso/validar', [AcessoController::class, 'validarIdentidade'])->name('auth.acesso.validar');
-    Route::post('/acesso', [AcessoController::class, 'registrar'])->name('auth.acesso.registrar');
+    Route::middleware(['auth', 'user.active', 'first.access.pending'])->group(function () {
+        Route::get('/acesso', [AcessoController::class, 'index'])->name('auth.acesso');
+        Route::post('/acesso/validar', [AcessoController::class, 'validarIdentidade'])->name('auth.acesso.validar');
+        Route::post('/acesso', [AcessoController::class, 'registrar'])->name('auth.acesso.registrar');
+    });
 
     Route::middleware('auth')->group(function () {
         Route::get('/logout', [LoginController::class, 'logout'])->name('auth.logout');
