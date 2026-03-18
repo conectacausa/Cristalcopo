@@ -25,9 +25,7 @@ class EnsureUserIsActive
             $request->session()->invalidate();
             $request->session()->regenerateToken();
 
-            return redirect()
-                ->route('auth.login')
-                ->with('error', 'Seu usuário está inativo e não pode acessar o sistema.');
+            return redirect()->route('auth.login');
         }
 
         return $next($request);
