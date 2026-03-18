@@ -23,7 +23,7 @@ class GestaoPermissao extends Model
         ];
     }
 
-    public function telaLogin(): BelongsTo
+    public function loginTela(): BelongsTo
     {
         return $this->belongsTo(GestaoTela::class, 'login_tela_id');
     }
