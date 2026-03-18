@@ -13,6 +13,7 @@
     <link rel="stylesheet" href="{{ asset('assets/css/vendors_css.css') }}">
     <link rel="stylesheet" href="{{ asset('assets/css/style.css') }}">
     <link rel="stylesheet" href="{{ asset('assets/css/skin_color.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css">
 </head>
 
 <body class="hold-transition theme-primary bg-img" style="background-image: url('{{ asset('assets/images/auth-bg/bg-1.jpg') }}')">
@@ -106,12 +107,15 @@
             </div>
         </div>
     </div>
-
+    
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="{{ asset('assets/js/vendors.min.js') }}"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
     <script src="{{ asset('assets/js/pages/chat-popup.js') }}"></script>
     <script src="{{ asset('assets/icons/feather-icons/feather.min.js') }}"></script>
     <script src="{{ asset('assets/js/pages/toastr.js') }}"></script>
     <script src="{{ asset('assets/js/pages/notification.js') }}"></script>
+    
 
     <script>
         function aplicarMascaraCPF(valor) {
