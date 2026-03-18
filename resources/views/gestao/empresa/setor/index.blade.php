@@ -4,11 +4,10 @@
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="description" content="">
-    <meta name="author" content="">
-    <link rel="icon" href="{{ asset('assets/images/favicon.ico') }}">
 
     <title>Cristalcopo - Setor</title>
+
+    <link rel="icon" href="{{ asset('assets/images/favicon.ico') }}">
 
     <!-- Vendors Style-->
     <link rel="stylesheet" href="{{ asset('assets/css/vendors_css.css') }}">
@@ -30,6 +29,7 @@
 
     <div class="content-wrapper">
         <div class="container-full">
+
             <div class="content-header">
                 <div class="d-flex align-items-center">
                     <div class="me-auto">
@@ -46,7 +46,8 @@
                             </nav>
                         </div>
                     </div>
-                    <button type="button" class="waves-effect waves-light btn mb-5 bg-gradient-success w-200" onclick="abrirNovo()">
+
+                    <button type="button" onclick="abrirNovo()" class="waves-effect waves-light btn mb-5 bg-gradient-success w-200">
                         Novo Setor
                     </button>
                 </div>
@@ -64,13 +65,13 @@
                                     <div class="col-md-7">
                                         <div class="form-group">
                                             <label class="form-label">Nome</label>
-                                            <input type="text" id="filtro_nome" class="form-control" placeholder="Nome do setor">
+                                            <input type="text" id="nome" class="form-control" placeholder="Nome do setor">
                                         </div>
                                     </div>
                                     <div class="col-md-5">
                                         <div class="form-group">
                                             <label class="form-label">Filial</label>
-                                            <select id="filtro_filial" class="form-select">
+                                            <select id="filial_id" class="form-control">
                                                 <option value="">Todas as filiais</option>
                                                 @foreach($filiais as $filial)
                                                     <option value="{{ $filial->id }}">{{ $filial->nome }}</option>
@@ -91,7 +92,7 @@
                                 <h4 class="box-title">Setor</h4>
                             </div>
                             <div class="box-body">
-                                <div class="table-responsive" id="setores-table-container">
+                                <div class="table-responsive" id="tabela">
                                     <div class="text-center p-20">Carregando...</div>
                                 </div>
                             </div>
@@ -99,6 +100,7 @@
                     </div>
                 </div>
             </section>
+
         </div>
     </div>
 
@@ -113,133 +115,112 @@
 <script src="{{ asset('assets/vendor_components/sweetalert/sweetalert.min.js') }}"></script>
 <script src="{{ asset('assets/vendor_components/sweetalert/jquery.sweet-alert.custom.js') }}"></script>
 <script src="{{ asset('assets/js/template.js') }}"></script>
+
 <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
 
 <script>
-    toastr.options = {
-        closeButton: true,
-        progressBar: true,
-        positionClass: "toast-top-right",
-        timeOut: "3000"
-    };
+toastr.options = {
+    closeButton: true,
+    progressBar: true,
+    positionClass: "toast-top-right",
+    timeOut: "3000"
+};
 
-    let filtroTimer = null;
+let filtroTimer;
 
-    function carregarTabela(page = 1) {
-        $('#setores-table-container').html('<div class="text-center p-20">Carregando...</div>');
+$('#nome').on('keyup', function () {
+    clearTimeout(filtroTimer);
+    filtroTimer = setTimeout(() => {
+        carregarTabela();
+    }, 400);
+});
 
-        $.ajax({
-            url: "{{ url('/empresa/setor/list') }}",
-            type: "GET",
-            data: {
-                page: page,
-                nome: $('#filtro_nome').val(),
-                filial_id: $('#filtro_filial').val()
-            },
-            success: function(response) {
-                $('#setores-table-container').html(response);
-            },
-            error: function() {
-                toastr.error('Erro ao carregar setores.');
-            }
+$('#filial_id').on('change', function () {
+    carregarTabela();
+});
+
+function carregarTabela(page = 1) {
+    $('#tabela').html('<div class="text-center p-20">Carregando...</div>');
+
+    $.get('/empresa/setor/list?page=' + page + '&nome=' + $('#nome').val() + '&filial_id=' + $('#filial_id').val(), function (data) {
+        $('#tabela').html(data);
+    }).fail(function(xhr) {
+        console.error(xhr.responseText);
+        toastr.error('Erro ao carregar setores');
+    });
+}
+
+function abrirNovo() {
+    $('#modalSetor').modal('show');
+    $('#formSetor')[0].reset();
+    $('#id').val('');
+    $('input[name="filiais[]"]').prop('checked', false);
+}
+
+function editar(id, nome, filiais) {
+    $('#modalSetor').modal('show');
+    $('#id').val(id);
+    $('#nome_setor').val(nome);
+
+    $('input[name="filiais[]"]').prop('checked', false);
+
+    if (Array.isArray(filiais)) {
+        filiais.forEach(function (filialId) {
+            $('#filial_' + filialId).prop('checked', true);
         });
     }
+}
 
-    $('#filtro_nome').on('keyup', function () {
-        clearTimeout(filtroTimer);
-        filtroTimer = setTimeout(function () {
-            carregarTabela(1);
-        }, 300);
+function salvar() {
+    let id = $('#id').val();
+    let url = id ? '/empresa/setor/update/' + id : '/empresa/setor/store';
+
+    $.post(url, $('#formSetor').serialize())
+    .done(function () {
+        $('#modalSetor').modal('hide');
+        toastr.success('Setor salvo com sucesso');
+        carregarTabela();
+    })
+    .fail(function(xhr) {
+        console.error(xhr.responseText);
+        toastr.error('Erro ao salvar setor');
     });
+}
 
-    $('#filtro_filial').on('change', function () {
-        carregarTabela(1);
-    });
-
-    function abrirNovo() {
-        $('#setor_id').val('');
-        $('#nome').val('');
-        $('input[name="filiais[]"]').prop('checked', false);
-        $('#modalSetorLabel').text('Novo Setor');
-        $('#modalSetor').modal('show');
-    }
-
-    function editar(id, nome, filiais) {
-        $('#setor_id').val(id);
-        $('#nome').val(nome);
-        $('input[name="filiais[]"]').prop('checked', false);
-
-        if (Array.isArray(filiais)) {
-            filiais.forEach(function(filialId) {
-                $('#filial_' + filialId).prop('checked', true);
-            });
-        }
-
-        $('#modalSetorLabel').text('Editar Setor');
-        $('#modalSetor').modal('show');
-    }
-
-    function salvar() {
-        let id = $('#setor_id').val();
-        let url = id
-            ? "{{ url('/empresa/setor/update') }}/" + id
-            : "{{ url('/empresa/setor/store') }}";
-
+function excluir(id) {
+    swal({
+        title: "Confirmar exclusão?",
+        text: "Essa ação não poderá ser desfeita!",
+        type: "warning",
+        showCancelButton: true,
+    }, function () {
         $.ajax({
-            url: url,
-            type: "POST",
-            data: $('#formSetor').serialize(),
-            success: function() {
-                $('#modalSetor').modal('hide');
-                toastr.success('Setor salvo com sucesso.');
+            url: '/empresa/setor/delete/' + id,
+            type: 'DELETE',
+            data: {
+                _token: '{{ csrf_token() }}'
+            },
+            success: function () {
+                toastr.success('Setor excluído com sucesso');
                 carregarTabela();
             },
-            error: function() {
-                toastr.error('Erro ao salvar setor.');
+            error: function (xhr) {
+                console.error(xhr.responseText);
+                toastr.error('Erro ao excluir setor');
             }
         });
-    }
-
-    function excluir(id) {
-        swal({
-            title: "Tem certeza?",
-            text: "Deseja realmente excluir este setor?",
-            type: "warning",
-            showCancelButton: true,
-            confirmButtonColor: "#2962FF",
-            confirmButtonText: "Sim, excluir",
-            cancelButtonText: "Cancelar",
-            closeOnConfirm: true
-        }, function(confirmado) {
-            if (confirmado) {
-                $.ajax({
-                    url: "{{ url('/empresa/setor/delete') }}/" + id,
-                    type: "DELETE",
-                    data: {
-                        _token: "{{ csrf_token() }}"
-                    },
-                    success: function() {
-                        toastr.success('Setor excluído com sucesso.');
-                        carregarTabela();
-                    },
-                    error: function() {
-                        toastr.error('Erro ao excluir setor.');
-                    }
-                });
-            }
-        });
-    }
-
-    $(document).on('click', '#setores-table-container .pagination a', function(e) {
-        e.preventDefault();
-        let href = $(this).attr('href');
-        let page = new URL(href).searchParams.get('page') || 1;
-        carregarTabela(page);
     });
+}
 
-    $(document).ready(function () {
-        carregarTabela();
-    });
+$(document).on('click', '.pagination a', function(e){
+    e.preventDefault();
+    let page = $(this).attr('href').split('page=')[1];
+    carregarTabela(page);
+});
+
+$(document).ready(function () {
+    carregarTabela();
+});
 </script>
 
 </body>
