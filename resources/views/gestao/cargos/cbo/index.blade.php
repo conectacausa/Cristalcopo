@@ -11,6 +11,9 @@
     <link rel="stylesheet" href="{{ asset('assets/css/vendors_css.css') }}">
     <link rel="stylesheet" href="{{ asset('assets/css/style.css') }}">
     <link rel="stylesheet" href="{{ asset('assets/css/skin_color.css') }}">
+
+    <!-- TOASTR CDN -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css">
 </head>
 
 <body class="hold-transition light-skin sidebar-mini theme-primary fixed">
@@ -85,7 +88,7 @@
 
                             <div class="box-body">
                                 <div class="table-responsive" id="tabela">
-                                    <!-- AJAX -->
+                                    <div class="text-center p-20">Carregando...</div>
                                 </div>
                             </div>
                         </div>
@@ -109,9 +112,25 @@
 <script src="{{ asset('assets/vendor_components/sweetalert/sweetalert.min.js') }}"></script>
 <script src="{{ asset('assets/js/template.js') }}"></script>
 
+<!-- TOASTR CDN -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
+
 @include('gestao.cargos.cbo.partials.modal')
 
 <script>
+/* ================================
+   TOASTR CONFIG
+================================ */
+toastr.options = {
+    closeButton: true,
+    progressBar: true,
+    positionClass: "toast-top-right",
+    timeOut: "3000"
+};
+
+/* ================================
+   FILTRO COM DELAY
+================================ */
 let filtroTimer;
 
 $('#filtro').on('keyup', function () {
@@ -121,18 +140,29 @@ $('#filtro').on('keyup', function () {
     }, 400);
 });
 
+/* ================================
+   CARREGAR TABELA
+================================ */
 function carregarTabela(page = 1) {
+    $('#tabela').html('<div class="text-center p-20">Carregando...</div>');
+
     $.get('/cargos/cbo/list?page=' + page + '&filtro=' + $('#filtro').val(), function (data) {
         $('#tabela').html(data);
     });
 }
 
+/* ================================
+   NOVO
+================================ */
 function abrirNovo() {
     $('#modalCbo').modal('show');
     $('#formCbo')[0].reset();
     $('#id').val('');
 }
 
+/* ================================
+   EDITAR
+================================ */
 function editar(id, codigo, descricao) {
     $('#modalCbo').modal('show');
     $('#id').val(id);
@@ -140,17 +170,29 @@ function editar(id, codigo, descricao) {
     $('#descricao_cbo').val(descricao);
 }
 
+/* ================================
+   SALVAR (CREATE + UPDATE)
+================================ */
 function salvar() {
     let id = $('#id').val();
     let url = id ? '/cargos/cbo/update/' + id : '/cargos/cbo/store';
 
-    $.post(url, $('#formCbo').serialize(), function () {
+    $.post(url, $('#formCbo').serialize())
+    .done(function () {
         $('#modalCbo').modal('hide');
-        toastr.success('Salvo com sucesso');
+
+        toastr.success('CBO salvo com sucesso');
+
         carregarTabela();
+    })
+    .fail(function () {
+        toastr.error('Erro ao salvar CBO');
     });
 }
 
+/* ================================
+   EXCLUIR
+================================ */
 function excluir(id) {
     swal({
         title: "Confirmar exclusão?",
@@ -158,24 +200,37 @@ function excluir(id) {
         type: "warning",
         showCancelButton: true,
     }, function () {
+
         $.ajax({
             url: '/cargos/cbo/delete/' + id,
             type: 'DELETE',
-            data: {_token: '{{ csrf_token() }}'},
+            data: {
+                _token: '{{ csrf_token() }}'
+            },
             success: function () {
-                toastr.success('Excluído com sucesso');
+                toastr.success('CBO excluído com sucesso');
                 carregarTabela();
+            },
+            error: function () {
+                toastr.error('Erro ao excluir CBO');
             }
         });
+
     });
 }
 
+/* ================================
+   PAGINAÇÃO AJAX
+================================ */
 $(document).on('click', '.pagination a', function(e){
     e.preventDefault();
     let page = $(this).attr('href').split('page=')[1];
     carregarTabela(page);
 });
 
+/* ================================
+   INIT
+================================ */
 $(document).ready(function () {
     carregarTabela();
 });
