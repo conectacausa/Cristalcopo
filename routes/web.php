@@ -1,43 +1,25 @@
 <?php
 
-use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\Auth\AcessoController;
 use App\Http\Controllers\Auth\LoginController;
-
-/*
-|--------------------------------------------------------------------------
-| Web Routes
-|--------------------------------------------------------------------------
-*/
+use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
     return redirect()->route('auth.login');
-});
+})->name('home');
 
 Route::prefix('auth')->group(function () {
-
-    // Login
     Route::get('/login', [LoginController::class, 'index'])->name('auth.login');
     Route::post('/login', [LoginController::class, 'autenticar'])->name('auth.login.autenticar');
-
-    // Logout
     Route::get('/logout', [LoginController::class, 'logout'])->name('auth.logout');
 
-    // Futuras páginas (placeholder)
+    Route::get('/acesso', [AcessoController::class, 'index'])->name('auth.acesso');
+    Route::post('/acesso/validar', [AcessoController::class, 'validarIdentidade'])->name('auth.acesso.validar');
+    Route::post('/acesso', [AcessoController::class, 'registrar'])->name('auth.acesso.registrar');
+
     Route::view('/recuperar', 'auth.recuperar.index')->name('auth.recuperar');
-    Route::view('/acesso', 'auth.acesso.index')->name('auth.acesso');
 });
 
-/*
-|--------------------------------------------------------------------------
-| Área protegida (exemplo futuro)
-|--------------------------------------------------------------------------
-*/
-
-Route::middleware([])->group(function () {
-
-    // Exemplo de rota após login (você pode ajustar depois)
-    Route::get('/dashboard', function () {
-        return 'Dashboard (logado)';
-    });
-
+Route::get('/dashboard', function () {
+    return 'Dashboard (logado)';
 });
