@@ -5,7 +5,7 @@ use App\Http\Controllers\Auth\LoginController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
-    return redirect()->route('auth.login');
+    return redirect()->route('dashboard');
 })->name('home');
 
 Route::prefix('auth')->group(function () {
