@@ -17,7 +17,7 @@
                                         <i class="mdi mdi-home-outline"></i>
                                     </a>
                                 </li>
-                                <li class="breadcrumb-item">Empresa</li>
+                                <li class="breadcrumb-item">Filiais</li>
                                 <li class="breadcrumb-item active" aria-current="page">Filiais</li>
                             </ol>
                         </nav>
@@ -26,7 +26,7 @@
 
                 <a href="{{ route('empresa.filiais.create') }}"
                    class="waves-effect waves-light btn mb-5 bg-gradient-success w-200">
-                    Nova Empresa
+                    Nova Filial
                 </a>
             </div>
         </div>
@@ -66,7 +66,7 @@
                 <div class="col-12">
                     <div class="box">
                         <div class="box-header with-border">
-                            <h4 class="box-title">Empresa</h4>
+                            <h4 class="box-title">Filiais</h4>
                         </div>
                         <div class="box-body">
                             <div class="table-responsive">
