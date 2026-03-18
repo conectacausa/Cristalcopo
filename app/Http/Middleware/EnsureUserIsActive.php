@@ -15,20 +15,10 @@ class EnsureUserIsActive
     {
         $user = auth()->user();
 
-        // Se não houver usuário autenticado, deixa a middleware auth tratar.
         if (! $user) {
             return $next($request);
         }
 
-        /*
-         |---------------------------------------------------------------
-         | Ajuste esta regra conforme o padrão real da sua tabela.
-         | Exemplos possíveis:
-         | - $user->ativo === true
-         | - $user->situacao === 'ATIVO'
-         | - $user->status === 'ATIVO'
-         |---------------------------------------------------------------
-         */
         if ((int) $user->ativo !== 1) {
             auth()->logout();
 
