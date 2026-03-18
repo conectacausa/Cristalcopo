@@ -26,13 +26,10 @@
     <div id="loader"></div>
 
     @include('layouts.includes.header')
-
     @include('layouts.includes.menu')
 
-    <!-- Content Wrapper. Contains page content -->
     <div class="content-wrapper">
         <div class="container-full">
-            <!-- Content Header (Page header) -->
             <div class="content-header">
                 <div class="d-flex align-items-center">
                     <div class="me-auto">
@@ -55,9 +52,7 @@
                 </div>
             </div>
 
-            <!-- Main content -->
             <section class="content">
-                <!-- Filtros -->
                 <div class="row">
                     <div class="col-12">
                         <div class="box">
@@ -89,7 +84,6 @@
                     </div>
                 </div>
 
-                <!-- Tabela -->
                 <div class="row">
                     <div class="col-12">
                         <div class="box">
@@ -98,33 +92,27 @@
                             </div>
                             <div class="box-body">
                                 <div class="table-responsive" id="setores-table-container">
-                                    @include('gestao.empresa.setor.partials.table', ['dados' => collect()])
+                                    <div class="text-center p-20">Carregando...</div>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
             </section>
-            <!-- /.content -->
         </div>
     </div>
-    <!-- /.content-wrapper -->
 
     @include('layouts.includes.footer')
 </div>
-<!-- ./wrapper -->
 
 @include('gestao.empresa.setor.partials.modal')
 
-<!-- Vendor JS -->
 <script src="{{ asset('assets/js/vendors.min.js') }}"></script>
 <script src="{{ asset('assets/js/pages/chat-popup.js') }}"></script>
 <script src="{{ asset('assets/icons/feather-icons/feather.min.js') }}"></script>
 <script src="{{ asset('assets/vendor_components/sweetalert/sweetalert.min.js') }}"></script>
 <script src="{{ asset('assets/vendor_components/sweetalert/jquery.sweet-alert.custom.js') }}"></script>
 <script src="{{ asset('assets/js/template.js') }}"></script>
-
-<!-- Toastr CDN -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
 
 <script>
