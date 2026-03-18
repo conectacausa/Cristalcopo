@@ -11,7 +11,7 @@ class SetorController extends Controller
 {
     public function index()
     {
-        $filiais = EmpresaFilial::orderBy('nome')->get();
+        $filiais = EmpresaFilial::orderBy('nome_fantasia')->get();
 
         return view('gestao.empresa.setor.index', compact('filiais'));
     }
@@ -26,7 +26,7 @@ class SetorController extends Controller
 
         if ($request->filial_id) {
             $query->whereHas('filiais', function ($q) use ($request) {
-                $q->where('empresa_filiais.id', $request->filial_id);
+                $q->where('empresa_filial.id', $request->filial_id);
             });
         }
 
