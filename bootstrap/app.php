@@ -18,6 +18,10 @@ return Application::configure(basePath: dirname(__DIR__))
             return route('auth.login');
         });
 
+        $middleware->redirectUsersTo(function (Request $request) {
+            return route('dashboard');
+        });
+
         $middleware->alias([
             'first.access.completed' => EnsureFirstAccessCompleted::class,
             'user.active' => EnsureUserIsActive::class,
