@@ -574,6 +574,8 @@
             'descricao' => optional($item->cnae)->descricao,
         ];
     })->values();
+
+    $errorMessagesJs = $errors->all();
 @endphp
 
 <script>
@@ -586,6 +588,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const oldCidadeId = @json(old('cidade_id', $filial->cidade_id));
     const csrfToken = @json(csrf_token());
     const filialId = @json($filial->id);
+    const validationErrors = @json($errorMessagesJs);
 
     const cnpjInput = document.getElementById('cnpj');
     const btnConsultarCnpj = document.getElementById('btn-consultar-cnpj');
@@ -645,6 +648,12 @@ document.addEventListener('DOMContentLoaded', function () {
         } else {
             alert(message);
         }
+    }
+
+    if (Array.isArray(validationErrors) && validationErrors.length) {
+        validationErrors.forEach(function (message) {
+            toastrError(message);
+        });
     }
 
     function onlyNumbers(value) {
