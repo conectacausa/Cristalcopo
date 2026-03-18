@@ -41,8 +41,6 @@
     </tbody>
 </table>
 
-@if(method_exists($dados, 'links'))
-    <div class="mt-3">
-        {{ $dados->links() }}
-    </div>
-@endif
+<div class="mt-3">
+    {{ $dados->links() }}
+</div>
