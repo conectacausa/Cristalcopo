@@ -90,31 +90,32 @@ class LoginController extends Controller
     {
         $returnUrl = (string) $request->input('returnurl', $request->query('returnurl', ''));
 
-        if ($this->isSafeInternalPath($returnUrl)) {
+        if ($this->isAllowedReturnUrl($returnUrl)) {
             return redirect($returnUrl);
         }
 
         $slug = $this->normalizeSlug($user->permissao?->loginTela?->slug);
 
         if (! empty($slug) && $this->userHasAccessToSlug($user->permissao_id, $slug)) {
-            if ($slug === 'dashboard') {
-                return redirect()->route('dashboard');
-            }
-
-            return redirect('/' . $slug);
+            return $this->redirectBySlug($slug);
         }
 
         $firstAllowedSlug = $this->normalizeSlug($this->firstAllowedSlug($user->permissao_id));
 
         if (! empty($firstAllowedSlug)) {
-            if ($firstAllowedSlug === 'dashboard') {
-                return redirect()->route('dashboard');
-            }
-
-            return redirect('/' . $firstAllowedSlug);
+            return $this->redirectBySlug($firstAllowedSlug);
         }
 
         abort(403, 'Nenhuma tela autorizada foi encontrada para esta permissão.');
+    }
+
+    protected function redirectBySlug(string $slug): RedirectResponse
+    {
+        if ($slug === 'dashboard') {
+            return redirect()->route('dashboard');
+        }
+
+        return redirect('/' . ltrim($slug, '/'));
     }
 
     protected function userHasAccessToSlug(?int $permissaoId, string $slug): bool
@@ -162,7 +163,7 @@ class LoginController extends Controller
         return ltrim($slug, '/');
     }
 
-    protected function isSafeInternalPath(string $path): bool
+    protected function isAllowedReturnUrl(string $path): bool
     {
         if ($path === '') {
             return false;
@@ -172,6 +173,24 @@ class LoginController extends Controller
             return false;
         }
 
-        return ! str_starts_with($path, '//');
+        if (str_starts_with($path, '//')) {
+            return false;
+        }
+
+        $blockedPaths = [
+            '/auth/login',
+            '/auth/logout',
+            '/auth/redirect',
+            '/auth/acesso',
+            '/auth/recuperar',
+        ];
+
+        foreach ($blockedPaths as $blockedPath) {
+            if ($path === $blockedPath || str_starts_with($path, $blockedPath . '?')) {
+                return false;
+            }
+        }
+
+        return true;
     }
 }
