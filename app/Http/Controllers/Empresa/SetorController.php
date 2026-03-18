@@ -4,7 +4,7 @@ namespace App\Http\Controllers\Empresa;
 
 use App\Http\Controllers\Controller;
 use App\Models\EmpresaSetor;
-use App\Models\Filial;
+use App\Models\EmpresaFilial;
 use App\Models\VinculoFilialSetor;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
