@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class GestaoTela extends Model
 {
@@ -14,4 +15,9 @@ class GestaoTela extends Model
         'icone',
         'slug',
     ];
+
+    public function permissoesLogin(): HasMany
+    {
+        return $this->hasMany(GestaoPermissao::class, 'login_tela_id');
+    }
 }
