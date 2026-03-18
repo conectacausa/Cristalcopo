@@ -29,7 +29,7 @@ Route::prefix('auth')->group(function () {
 });
 
 Route::middleware(['auth', 'user.active'])->group(function () {
-    Route::get('/dashboard', function () {
-        return 'Dashboard (logado)';
-    })->name('dashboard')->middleware('screen:dashboard');
+    Route::view('/dashboard', 'dashboard.index')
+        ->name('dashboard')
+        ->middleware('screen:dashboard');
 });
