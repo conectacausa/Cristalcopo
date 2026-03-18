@@ -1,403 +1,694 @@
-Chat, agora nós vamos criar o create com as informações abaixo: 
+<?php
 
-1) Layout da página esta abaixo. 
-2) Quando o usuário for digitando o CNPJ incluir a mascará de forma automatica. 
-3) Se o usuário clicar na lupa, fazer a consulta na API e preencher os campos com as informações. Neste processo, verificar se porte existe se não existir criar, verificar se CNAE existe, se não existir criar, se naturza juridica existe, se não existir criar. Vericiar se cidade, estado e pais existem, se não existir criar. Enquanto consulta a API colocar um loading no lugar da lupa para evitar que usuário clique duas vezes. 
-4) Quando digitar o código do porte no campo a descrição deve atualizar com a descrição correspondente. 
-5) Quando digitar o código natureza no campo, a descrição deve atualizar com a descrição correspondente. 
-6) No campo Código CNAE o usuário deve digitar uma subclasse colocar mascará conforme ele digita. Quando finalizar de digitar buscar a descrição e preencher o campo de descrição cnae. Quando usuário clicar em Adicionar deve salvar na tabela de vinculos e mostrar na tabela abaixo. 
-7) Na tabela organizar os CNAEs por ordem de subclasse porem o cnae prioriátio deve ser o primeiro a aparecer na tela. 
-8) Na tabela quando um checkbox prioritário estiver setado os outros devem ficar disabled. Só pode ter um prioritário por filial. Quando marca ou desmarca o checkbox ja atualiza no banco. 
-9) Nos campos de telefone conforme usuário digita os números incluir a mascará automaticamente. 
-10) No campo de cidade mostrar somente as cidades vinculadas ao estado selecionado. 
-11) No campo estado mostrar somente os estados vinculados ao pais selecionado. 
-12) No campo CEP conforme usuário for digitando colocar mascará. 
-13) Incluir botão de salvar no final da página. 
-14) Depois de Salvar direcionar para editar com o id recem salvo aberto mostrar um toastr com suceso ou com erro, se tiver erro mostrar qual é o erro. 
+namespace App\Http\Controllers\Gestao\Empresa;
 
----
-Consulta na API
-# só números
-curl -s https://api.opencnpj.org/00000000000000 | jq
+use App\Http\Controllers\Controller;
+use App\Models\EmpresaCnae;
+use App\Models\EmpresaFilial;
+use App\Models\EmpresaNatJuridica;
+use App\Models\EmpresaPorte;
+use App\Models\GestaoCidade;
+use App\Models\GestaoEstado;
+use App\Models\GestaoPais;
+use App\Models\VinculoFilialXCnae;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
+use Illuminate\View\View;
 
-Exemplo de Resposta: 
+class EmpresaFilialController extends Controller
 {
-  "cnpj": "00000000000000",
-  "razao_social": "EMPRESA EXEMPLO LTDA",
-  "nome_fantasia": "EXEMPLO",
-  "situacao_cadastral": "Ativa",
-  "data_situacao_cadastral": "2000-01-01",
-  "matriz_filial": "Matriz",
-  "data_inicio_atividade": "2000-01-01",
-  "cnae_principal": "0000000",
-  "cnaes_secundarios": [
-    "0000001",
-    "0000002"
-  ],
-  "cnaes_secundarios_count": 2,
-  "natureza_juridica": "Sociedade Empresária Limitada",
-  "logradouro": "RUA EXEMPLO",
-  "numero": "123",
-  "complemento": "SALA 1",
-  "bairro": "BAIRRO EXEMPLO",
-  "cep": "00000000",
-  "uf": "SP",
-  "municipio": "SAO PAULO",
-  "email": "contato@exemplo.com",
-  "telefones": [
+    public function index(Request $request): View
     {
-      "ddd": "11",
-      "numero": "900000000",
-      "is_fax": false
+        $query = EmpresaFilial::query()
+            ->with([
+                'porte:id,descricao',
+                'naturezaJuridica:id,descricao',
+                'pais:id,nome',
+                'estado:id,nome,uf',
+                'cidade:id,nome',
+            ]);
+
+        if ($request->filled('busca')) {
+            $busca = trim((string) $request->input('busca'));
+            $buscaNumerica = $this->onlyNumbers($busca);
+
+            $query->where(function ($q) use ($busca, $buscaNumerica) {
+                $q->where('razao_social', 'like', "%{$busca}%");
+
+                if (!empty($buscaNumerica)) {
+                    $q->orWhere('cnpj', 'like', "%{$buscaNumerica}%");
+                }
+            });
+        }
+
+        $filiais = $query
+            ->orderBy('nome_fantasia')
+            ->paginate(15)
+            ->withQueryString();
+
+        return view('gestao.empresa.filiais.index', compact('filiais'));
     }
-  ],
-  "capital_social": "1000,00",
-  "porte_empresa": "Microempresa (ME)",
-  "opcao_simples": null,
-  "data_opcao_simples": null,
-  "opcao_mei": null,
-  "data_opcao_mei": null,
-  "QSA": [
+
+    public function create(): View
     {
-      "nome_socio": "SOCIO PJ EXEMPLO",
-      "cnpj_cpf_socio": "00000000000000",
-      "qualificacao_socio": "Sócio Pessoa Jurídica",
-      "data_entrada_sociedade": "2000-01-01",
-      "identificador_socio": "Pessoa Jurídica",
-      "faixa_etaria": "Não se aplica"
-    },
-    {
-      "nome_socio": "SOCIA PF EXEMPLO",
-      "cnpj_cpf_socio": "***000000**",
-      "qualificacao_socio": "Administrador",
-      "data_entrada_sociedade": "2000-01-01",
-      "identificador_socio": "Pessoa Física",
-      "faixa_etaria": "31 a 40 anos"
+        $portes = EmpresaPorte::query()
+            ->orderBy('codigo')
+            ->get(['id', 'codigo', 'descricao']);
+
+        $naturezasJuridicas = EmpresaNatJuridica::query()
+            ->orderBy('codigo')
+            ->get(['id', 'codigo', 'descricao']);
+
+        $paises = GestaoPais::query()
+            ->orderBy('nome')
+            ->get(['id', 'nome', 'iso2', 'iso3']);
+
+        return view('gestao.empresa.filiais.create', [
+            'portes' => $portes,
+            'naturezasJuridicas' => $naturezasJuridicas,
+            'paises' => $paises,
+            'estados' => collect(),
+            'cidades' => collect(),
+        ]);
     }
-  ]
+
+    public function store(Request $request): RedirectResponse
+    {
+        $data = $this->normalizePayload($request);
+
+        $validated = validator(
+            $data,
+            $this->rules(),
+            $this->messages(),
+            $this->attributes()
+        )->validate();
+
+        $this->validateGeography($validated);
+
+        $filial = null;
+
+        DB::transaction(function () use (&$filial, $validated) {
+            $filial = EmpresaFilial::create($validated);
+
+            if (request()->filled('cnaes')) {
+                $this->syncCnaesFromRequest($filial, request()->input('cnaes', []));
+            }
+        });
+
+        return redirect()
+            ->route('empresa.filiais.edit', $filial->id)
+            ->with('success', 'Filial cadastrada com sucesso.');
+    }
+
+    public function edit(int $id): View
+    {
+        $filial = EmpresaFilial::query()
+            ->with([
+                'porte:id,codigo,descricao',
+                'naturezaJuridica:id,codigo,descricao',
+                'pais:id,nome,iso2,iso3',
+                'estado:id,nome,uf,pais_id',
+                'cidade:id,nome,estado_id',
+            ])
+            ->findOrFail($id);
+
+        $portes = EmpresaPorte::query()
+            ->orderBy('codigo')
+            ->get(['id', 'codigo', 'descricao']);
+
+        $naturezasJuridicas = EmpresaNatJuridica::query()
+            ->orderBy('codigo')
+            ->get(['id', 'codigo', 'descricao']);
+
+        $paises = GestaoPais::query()
+            ->orderBy('nome')
+            ->get(['id', 'nome', 'iso2', 'iso3']);
+
+        $estados = GestaoEstado::query()
+            ->where('pais_id', $filial->pais_id)
+            ->orderBy('nome')
+            ->get(['id', 'nome', 'uf', 'pais_id']);
+
+        $cidades = GestaoCidade::query()
+            ->where('estado_id', $filial->estado_id)
+            ->orderBy('nome')
+            ->get(['id', 'nome', 'estado_id']);
+
+        $cnaes = VinculoFilialXCnae::query()
+            ->with(['cnae:id,subclasse,descricao'])
+            ->where('filial_id', $filial->id)
+            ->orderByDesc('principal')
+            ->join('empresa_cnae', 'empresa_cnae.id', '=', 'vinculo_filial_x_cnae.cnae_id')
+            ->orderBy('empresa_cnae.subclasse')
+            ->select('vinculo_filial_x_cnae.*')
+            ->get();
+
+        return view('gestao.empresa.filiais.edit', compact(
+            'filial',
+            'portes',
+            'naturezasJuridicas',
+            'paises',
+            'estados',
+            'cidades',
+            'cnaes'
+        ));
+    }
+
+    public function update(Request $request, int $id): RedirectResponse
+    {
+        $filial = EmpresaFilial::query()->findOrFail($id);
+
+        $data = $this->normalizePayload($request);
+
+        $validated = validator(
+            $data,
+            $this->rules($filial->id),
+            $this->messages(),
+            $this->attributes()
+        )->validate();
+
+        $this->validateGeography($validated);
+
+        DB::transaction(function () use ($filial, $validated, $request) {
+            $filial->update($validated);
+
+            if ($request->filled('cnaes')) {
+                $this->syncCnaesFromRequest($filial, $request->input('cnaes', []));
+            }
+        });
+
+        return redirect()
+            ->route('empresa.filiais.edit', $filial->id)
+            ->with('success', 'Filial atualizada com sucesso.');
+    }
+
+    public function destroy(int $id): RedirectResponse
+    {
+        $filial = EmpresaFilial::query()->findOrFail($id);
+        $filial->delete();
+
+        return redirect()
+            ->route('empresa.filiais.index')
+            ->with('success', 'Filial removida com sucesso.');
+    }
+
+    public function estadosPorPais(int $paisId): JsonResponse
+    {
+        $estados = GestaoEstado::query()
+            ->where('pais_id', $paisId)
+            ->orderBy('nome')
+            ->get(['id', 'nome', 'uf']);
+
+        return response()->json($estados);
+    }
+
+    public function cidadesPorEstado(int $estadoId): JsonResponse
+    {
+        $cidades = GestaoCidade::query()
+            ->where('estado_id', $estadoId)
+            ->orderBy('nome')
+            ->get(['id', 'nome']);
+
+        return response()->json($cidades);
+    }
+
+    public function buscarPortePorCodigo(string $codigo): JsonResponse
+    {
+        $porte = EmpresaPorte::query()
+            ->where('codigo', $codigo)
+            ->first(['id', 'codigo', 'descricao']);
+
+        return response()->json([
+            'found' => (bool) $porte,
+            'data' => $porte,
+        ]);
+    }
+
+    public function buscarNaturezaPorCodigo(string $codigo): JsonResponse
+    {
+        $natureza = EmpresaNatJuridica::query()
+            ->where('codigo', $codigo)
+            ->first(['id', 'codigo', 'descricao']);
+
+        return response()->json([
+            'found' => (bool) $natureza,
+            'data' => $natureza,
+        ]);
+    }
+
+    public function buscarCnaePorSubclasse(string $subclasse): JsonResponse
+    {
+        $subclasse = $this->normalizeCnae($subclasse);
+
+        $cnae = EmpresaCnae::query()
+            ->where('subclasse', $subclasse)
+            ->first(['id', 'subclasse', 'descricao']);
+
+        return response()->json([
+            'found' => (bool) $cnae,
+            'data' => $cnae,
+        ]);
+    }
+
+    public function adicionarCnae(Request $request, int $filialId): JsonResponse
+    {
+        $filial = EmpresaFilial::query()->findOrFail($filialId);
+
+        $validated = $request->validate([
+            'subclasse' => ['required', 'string', 'max:15'],
+            'principal' => ['nullable', 'boolean'],
+        ]);
+
+        $subclasse = $this->normalizeCnae($validated['subclasse']);
+
+        $cnae = EmpresaCnae::query()
+            ->where('subclasse', $subclasse)
+            ->first();
+
+        if (!$cnae) {
+            return response()->json([
+                'success' => false,
+                'message' => 'CNAE não encontrado.',
+            ], 422);
+        }
+
+        DB::transaction(function () use ($filial, $cnae, $validated) {
+            $principal = (bool) ($validated['principal'] ?? false);
+
+            if ($principal) {
+                VinculoFilialXCnae::query()
+                    ->where('filial_id', $filial->id)
+                    ->whereNull('deleted_at')
+                    ->update(['principal' => false]);
+            }
+
+            VinculoFilialXCnae::query()->updateOrCreate(
+                [
+                    'filial_id' => $filial->id,
+                    'cnae_id' => $cnae->id,
+                ],
+                [
+                    'principal' => $principal,
+                    'deleted_at' => null,
+                ]
+            );
+        });
+
+        return response()->json([
+            'success' => true,
+            'message' => 'CNAE adicionado com sucesso.',
+            'data' => $this->listarCnaesFilial($filial->id),
+        ]);
+    }
+
+    public function atualizarPrincipalCnae(Request $request, int $vinculoId): JsonResponse
+    {
+        $vinculo = VinculoFilialXCnae::query()->findOrFail($vinculoId);
+
+        $validated = $request->validate([
+            'principal' => ['required', 'boolean'],
+        ]);
+
+        DB::transaction(function () use ($vinculo, $validated) {
+            if ($validated['principal']) {
+                VinculoFilialXCnae::query()
+                    ->where('filial_id', $vinculo->filial_id)
+                    ->whereNull('deleted_at')
+                    ->update(['principal' => false]);
+            }
+
+            $vinculo->update([
+                'principal' => $validated['principal'],
+            ]);
+        });
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Prioridade atualizada com sucesso.',
+            'data' => $this->listarCnaesFilial($vinculo->filial_id),
+        ]);
+    }
+
+    public function removerCnae(int $vinculoId): JsonResponse
+    {
+        $vinculo = VinculoFilialXCnae::query()->findOrFail($vinculoId);
+        $filialId = $vinculo->filial_id;
+
+        $vinculo->delete();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'CNAE removido com sucesso.',
+            'data' => $this->listarCnaesFilial($filialId),
+        ]);
+    }
+
+    public function consultarCnpj(string $cnpj): JsonResponse
+    {
+        $cnpj = $this->onlyNumbers($cnpj);
+
+        if (strlen($cnpj) !== 14) {
+            return response()->json([
+                'success' => false,
+                'message' => 'CNPJ inválido.',
+            ], 422);
+        }
+
+        $response = Http::timeout(20)->get("https://api.opencnpj.org/{$cnpj}");
+
+        if (!$response->successful()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Não foi possível consultar o CNPJ na API.',
+            ], 422);
+        }
+
+        $payload = $response->json();
+
+        if (!is_array($payload)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Resposta inválida da API.',
+            ], 422);
+        }
+
+        $referencias = DB::transaction(function () use ($payload) {
+            return $this->garantirReferenciasDaApi($payload);
+        });
+
+        return response()->json([
+            'success' => true,
+            'message' => 'CNPJ consultado com sucesso.',
+            'data' => [
+                'api' => $payload,
+                'referencias' => $referencias,
+            ],
+        ]);
+    }
+
+    private function rules(?int $id = null): array
+    {
+        return [
+            'razao_social' => ['required', 'string', 'max:200'],
+            'cnpj' => [
+                'required',
+                'string',
+                'size:14',
+                Rule::unique('empresa_filial', 'cnpj')->ignore($id),
+            ],
+            'nome_fantasia' => ['required', 'string', 'max:200'],
+            'data_abertura' => ['required', 'date'],
+            'porte_id' => ['required', 'integer', 'exists:empresa_porte,id'],
+            'natureza_juridica_id' => ['required', 'integer', 'exists:empresa_nat_juridica,id'],
+            'tipo' => ['required', Rule::in(['matriz', 'filial'])],
+            'situacao' => ['required', 'boolean'],
+            'telefone1' => ['nullable', 'string', 'max:20'],
+            'telefone2' => ['nullable', 'string', 'max:20'],
+            'email' => ['nullable', 'email', 'max:150'],
+            'logradouro' => ['nullable', 'string', 'max:200'],
+            'numero' => ['nullable', 'string', 'max:20'],
+            'bairro' => ['nullable', 'string', 'max:150'],
+            'cidade_id' => ['required', 'integer', 'exists:gestao_cidade,id'],
+            'estado_id' => ['required', 'integer', 'exists:gestao_estado,id'],
+            'pais_id' => ['required', 'integer', 'exists:gestao_pais,id'],
+            'complemento' => ['nullable', 'string', 'max:200'],
+            'cep' => ['nullable', 'string', 'size:8'],
+        ];
+    }
+
+    private function messages(): array
+    {
+        return [
+            'required' => 'O campo :attribute é obrigatório.',
+            'string' => 'O campo :attribute deve ser um texto válido.',
+            'integer' => 'O campo :attribute deve ser um número válido.',
+            'email' => 'O campo e-mail deve conter um endereço válido.',
+            'date' => 'O campo data de abertura deve conter uma data válida.',
+            'max' => 'O campo :attribute não pode ter mais de :max caracteres.',
+            'size' => 'O campo :attribute deve ter :size caracteres.',
+            'exists' => 'O valor informado para :attribute é inválido.',
+            'unique' => 'Já existe um registro com este :attribute.',
+            'in' => 'O valor informado para :attribute é inválido.',
+            'situacao.boolean' => 'A situação informada é inválida.',
+        ];
+    }
+
+    private function attributes(): array
+    {
+        return [
+            'razao_social' => 'razão social',
+            'cnpj' => 'CNPJ',
+            'nome_fantasia' => 'nome fantasia',
+            'data_abertura' => 'data de abertura',
+            'porte_id' => 'porte',
+            'natureza_juridica_id' => 'natureza jurídica',
+            'tipo' => 'tipo',
+            'situacao' => 'situação',
+            'telefone1' => 'telefone 1',
+            'telefone2' => 'telefone 2',
+            'email' => 'e-mail',
+            'logradouro' => 'logradouro',
+            'numero' => 'número',
+            'bairro' => 'bairro',
+            'cidade_id' => 'cidade',
+            'estado_id' => 'estado',
+            'pais_id' => 'país',
+            'complemento' => 'complemento',
+            'cep' => 'CEP',
+        ];
+    }
+
+    private function normalizePayload(Request $request): array
+    {
+        return [
+            'razao_social' => trim((string) $request->input('razao_social')),
+            'cnpj' => $this->onlyNumbers($request->input('cnpj')),
+            'nome_fantasia' => trim((string) $request->input('nome_fantasia')),
+            'data_abertura' => $request->input('data_abertura'),
+            'porte_id' => $request->input('porte_id'),
+            'natureza_juridica_id' => $request->input('natureza_juridica_id'),
+            'tipo' => $request->input('tipo'),
+            'situacao' => filter_var($request->input('situacao'), FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE),
+            'telefone1' => $this->nullableString($this->onlyNumbers($request->input('telefone1'))),
+            'telefone2' => $this->nullableString($this->onlyNumbers($request->input('telefone2'))),
+            'email' => $this->nullableString(mb_strtolower(trim((string) $request->input('email')))),
+            'logradouro' => $this->nullableString(trim((string) $request->input('logradouro'))),
+            'numero' => $this->nullableString(trim((string) $request->input('numero'))),
+            'bairro' => $this->nullableString(trim((string) $request->input('bairro'))),
+            'cidade_id' => $request->input('cidade_id'),
+            'estado_id' => $request->input('estado_id'),
+            'pais_id' => $request->input('pais_id'),
+            'complemento' => $this->nullableString(trim((string) $request->input('complemento'))),
+            'cep' => $this->nullableString($this->onlyNumbers($request->input('cep'))),
+        ];
+    }
+
+    private function validateGeography(array $data): void
+    {
+        $estado = GestaoEstado::query()
+            ->where('id', $data['estado_id'])
+            ->where('pais_id', $data['pais_id'])
+            ->first();
+
+        if (!$estado) {
+            throw ValidationException::withMessages([
+                'estado_id' => 'O estado informado não pertence ao país selecionado.',
+            ]);
+        }
+
+        $cidade = GestaoCidade::query()
+            ->where('id', $data['cidade_id'])
+            ->where('estado_id', $data['estado_id'])
+            ->first();
+
+        if (!$cidade) {
+            throw ValidationException::withMessages([
+                'cidade_id' => 'A cidade informada não pertence ao estado selecionado.',
+            ]);
+        }
+    }
+
+    private function garantirReferenciasDaApi(array $payload): array
+    {
+        $pais = GestaoPais::query()->firstOrCreate(
+            ['iso2' => 'BR'],
+            [
+                'nome' => 'Brasil',
+                'iso3' => 'BRA',
+            ]
+        );
+
+        $estado = GestaoEstado::query()->firstOrCreate(
+            [
+                'pais_id' => $pais->id,
+                'uf' => (string) ($payload['uf'] ?? ''),
+            ],
+            [
+                'nome' => (string) ($payload['uf'] ?? ''),
+                'codigo_ibge' => null,
+            ]
+        );
+
+        $cidade = GestaoCidade::query()->firstOrCreate(
+            [
+                'estado_id' => $estado->id,
+                'nome' => trim((string) ($payload['municipio'] ?? '')),
+            ],
+            [
+                'codigo_ibge' => null,
+            ]
+        );
+
+        $porte = EmpresaPorte::query()->firstOrCreate(
+            ['descricao' => trim((string) ($payload['porte_empresa'] ?? ''))],
+            [
+                'codigo' => $this->nextCodigo(EmpresaPorte::class),
+            ]
+        );
+
+        $natureza = EmpresaNatJuridica::query()->firstOrCreate(
+            ['descricao' => trim((string) ($payload['natureza_juridica'] ?? ''))],
+            [
+                'codigo' => $this->nextCodigo(EmpresaNatJuridica::class),
+            ]
+        );
+
+        $cnaePrincipal = null;
+
+        if (!empty($payload['cnae_principal'])) {
+            $cnaePrincipal = EmpresaCnae::query()->firstOrCreate(
+                ['subclasse' => $this->normalizeCnae((string) $payload['cnae_principal'])],
+                [
+                    'descricao' => 'CNAE importado via API',
+                ]
+            );
+        }
+
+        $cnaesSecundarios = [];
+
+        foreach (($payload['cnaes_secundarios'] ?? []) as $subclasse) {
+            $cnaesSecundarios[] = EmpresaCnae::query()->firstOrCreate(
+                ['subclasse' => $this->normalizeCnae((string) $subclasse)],
+                [
+                    'descricao' => 'CNAE importado via API',
+                ]
+            );
+        }
+
+        return [
+            'pais' => $pais,
+            'estado' => $estado,
+            'cidade' => $cidade,
+            'porte' => $porte,
+            'natureza_juridica' => $natureza,
+            'cnae_principal' => $cnaePrincipal,
+            'cnaes_secundarios' => $cnaesSecundarios,
+        ];
+    }
+
+    private function syncCnaesFromRequest(EmpresaFilial $filial, array $cnaes): void
+    {
+        VinculoFilialXCnae::query()
+            ->where('filial_id', $filial->id)
+            ->delete();
+
+        $temPrincipal = false;
+
+        foreach ($cnaes as $item) {
+            if (empty($item['subclasse'])) {
+                continue;
+            }
+
+            $subclasse = $this->normalizeCnae((string) $item['subclasse']);
+
+            $cnae = EmpresaCnae::query()->where('subclasse', $subclasse)->first();
+
+            if (!$cnae) {
+                continue;
+            }
+
+            $principal = !$temPrincipal && !empty($item['principal']);
+
+            VinculoFilialXCnae::query()->create([
+                'filial_id' => $filial->id,
+                'cnae_id' => $cnae->id,
+                'principal' => $principal,
+            ]);
+
+            if ($principal) {
+                $temPrincipal = true;
+            }
+        }
+    }
+
+    private function listarCnaesFilial(int $filialId): array
+    {
+        return VinculoFilialXCnae::query()
+            ->with(['cnae:id,subclasse,descricao'])
+            ->where('filial_id', $filialId)
+            ->whereNull('vinculo_filial_x_cnae.deleted_at')
+            ->join('empresa_cnae', 'empresa_cnae.id', '=', 'vinculo_filial_x_cnae.cnae_id')
+            ->orderByDesc('vinculo_filial_x_cnae.principal')
+            ->orderBy('empresa_cnae.subclasse')
+            ->get([
+                'vinculo_filial_x_cnae.id',
+                'vinculo_filial_x_cnae.filial_id',
+                'vinculo_filial_x_cnae.cnae_id',
+                'vinculo_filial_x_cnae.principal',
+            ])
+            ->map(function ($item) {
+                return [
+                    'id' => $item->id,
+                    'filial_id' => $item->filial_id,
+                    'cnae_id' => $item->cnae_id,
+                    'principal' => (bool) $item->principal,
+                    'subclasse' => $item->cnae?->subclasse,
+                    'descricao' => $item->cnae?->descricao,
+                ];
+            })
+            ->values()
+            ->toArray();
+    }
+
+    private function nextCodigo(string $modelClass): string
+    {
+        $ultimoCodigo = $modelClass::query()
+            ->select('codigo')
+            ->whereRaw("codigo ~ '^[0-9]+$'")
+            ->orderByRaw('CAST(codigo AS INTEGER) DESC')
+            ->value('codigo');
+
+        return str_pad(((int) $ultimoCodigo) + 1, 3, '0', STR_PAD_LEFT);
+    }
+
+    private function normalizeCnae(?string $value): string
+    {
+        $value = $this->onlyNumbers($value);
+
+        if (strlen($value) !== 7) {
+            return $value;
+        }
+
+        return substr($value, 0, 2) . '.' .
+            substr($value, 2, 2) . '-' .
+            substr($value, 4, 1) . '-' .
+            substr($value, 5, 2);
+    }
+
+    private function onlyNumbers(null|string $value): string
+    {
+        return preg_replace('/\D+/', '', $value ?? '') ?? '';
+    }
+
+    private function nullableString(?string $value): ?string
+    {
+        $value = is_string($value) ? trim($value) : $value;
+
+        return $value === '' ? null : $value;
+    }
 }
-
-
----
-Código da Página: 
-
-<!DOCTYPE html>
-<html lang="{lingua do site}">
-<head>
-  <meta charset="utf-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="description" content="">
-    <meta name="author" content="">
-    <link rel="icon" href="assets/images/favicon.ico">
-
-    <title>{nome site} | {nome tela}</title>
-  
-	<!-- Vendors Style-->
-	<link rel="stylesheet" href="assets/css/vendors_css.css">
-	  
-	<!-- Style-->  
-	<link rel="stylesheet" href="assets/css/style.css">
-	<link rel="stylesheet" href="assets/css/skin_color.css">	
-
-</head>
-<body class="hold-transition light-skin sidebar-mini theme-primary fixed">
-	
-<div class="wrapper">
-	<div id="loader"></div>
-
-  {Incluir aqui o arquivo de header}
-  
-  {Incluir menu aqui}
-    
-  <!-- Content Wrapper. Contains page content -->
-  <div class="content-wrapper">
-	  <div class="container-full">
-		<!-- Content Header (Page header) -->	  
-		<div class="content-header">
-			<div class="d-flex align-items-center">
-				<div class="me-auto">
-					<h4 class="page-title">{nome da tela}</h4>
-					<div class="d-inline-block align-items-center">
-						<nav>
-							<ol class="breadcrumb">
-								<li class="breadcrumb-item"><a href="#"><i class="mdi mdi-home-outline"></i></a></li>
-								<li class="breadcrumb-item">{módulo}</li>
-								<li class="breadcrumb-item">{nome tela}</li>
-							</ol>
-						</nav>
-					</div>
-				</div>
-			</div>
-		</div>
-
-		<!-- Main content -->
-		<section class="content">
-			<!-- Formulário -->
-			<div class="row">
-				<div class="col-12">
-					<div class="box">
-						<div class="box-header with-border">
-						  <h4 class="box-title">Adicionar Filial</h4>
-						</div>
-						<div class="box-body">
-							<div class="row">
-								<div class="col-md-4">
-									<div class="form-group">
-									  <label class="form-label">CNPJ</label>
-									  <div class="input-group">
-										<input type="text" class="form-control" placeholder="CNPJ" required> 
-										<button class="btn btn-primary btn-sm" type="button">
-											<i class="fa fa-search"></i>
-										</button> 
-									</div>
-									</div>
-								</div>
-								<div class="col-md-8">
-									<div class="form-group">
-									  <label class="form-label">Razão Social</label>
-									  <input type="text" class="form-control" placeholder="Razão Social">
-									</div>
-								</div>
-							</div>
-							<div class="row">
-								<div class="col-md-12">
-									<div class="form-group">
-									  <label class="form-label">Nome Fantasia</label>
-									  <input type="text" class="form-control" placeholder="Nome Fantasia">
-									</div>
-								</div>
-							</div>
-							
-							<div class="row">
-								<ul class="nav nav-tabs nav-fill" role="tablist">
-									<li class="nav-item"> 
-										<a class="nav-link active" data-bs-toggle="tab" href="#fiscal" role="tab">
-											<span>
-												<i class="fa fa-institution"></i>
-											</span> 
-											<span class="hidden-xs-down ms-15">Fiscal</span>
-										</a>
-									</li>
-									<li class="nav-item"> 
-										<a class="nav-link" data-bs-toggle="tab" href="#contato" role="tab">
-											<span>
-												<i class="fa fa-phone"></i>
-											</span> 
-											<span class="hidden-xs-down ms-15">Contato</span>
-										</a>
-									</li>
-									<li class="nav-item"> 
-										<a class="nav-link" data-bs-toggle="tab" href="#endereco" role="tab">
-											<span>
-												<i class="fa fa-map"></i>
-											</span> 
-											<span class="hidden-xs-down ms-15">Endereço</span>
-										</a>
-									</li>
-								</ul>
-								<div class="tab-content tabcontent-border">
-									<div class="tab-pane active" id="fiscal" role="tabpanel">
-										<div class="p-15">
-											<div class="row">
-												<div class="col-md-2">
-													<div class="form-group">
-													  <label class="form-label">Porte</label>
-													  <input type="text" class="form-control" placeholder="Código">
-													</div>
-												</div>
-												<div class="col-md-4">
-													<div class="form-group">
-													  <label class="form-label">Descrição Porte</label>
-													  <input type="text" class="form-control" placeholder="Descrição Porte" readonly>
-													</div>
-												</div>
-												<div class="col-md-2">
-													<div class="form-group">
-													  <label class="form-label">Natureza Juridica</label>
-													  <input type="text" class="form-control" placeholder="Código">
-													</div>
-												</div>
-												<div class="col-md-4">
-													<div class="form-group">
-													  <label class="form-label">Descrição Natureza Juridica</label>
-													  <input type="text" class="form-control" placeholder="Descrição Porte" readonly>
-													</div>
-												</div>
-											</div>
-											<div class="row">
-												<div class="col-md-4">
-													<div class="form-group">
-													  <label class="form-label">Data Abertura</label>
-													  <input type="date" class="form-control" placeholder="Data Abertura">
-													</div>
-												</div>
-												<div class="col-md-4">
-													<div class="form-group">
-													  <label class="form-label">Situação</label>
-														<select class="form-control select2" style="width: 100%;">
-														  <option>Ativo</option>
-														  <option>Inativo</option>
-														</select>
-													</div>
-												</div>
-												<div class="col-md-4">
-													<div class="form-group">
-													  <label class="form-label">Tipo</label>
-														<select class="form-control select2" style="width: 100%;">
-														  <option>Matriz</option>
-														  <option>Filial</option>
-														</select>
-													</div>
-												</div>
-											</div>
-											<div class="row">
-												<div class="col-md-2">
-													<div class="form-group">
-													  <label class="form-label">Código CNAE</label>
-													  <input type="text" class="form-control" placeholder="Código">
-													</div>
-												</div>
-												<div class="col-md-8">
-													<div class="form-group">
-													  <label class="form-label">Descrição CNAE</label>
-													  <input type="text" class="form-control" placeholder="Descrição CNAE" readonly>
-													</div>
-												</div>
-												<div class="col-md-2">
-													<div class="form-group">
-													  <label class="form-label"></label>
-													  <button type="button" class="waves-effect waves-light btn bg-gradient-success w-150">Adicionar</button>
-													</div>
-												</div>									
-											</div>
-											<div class="row">
-											{tabela}
-											</div>
-										</div>
-									</div>
-									<div class="tab-pane" id="contato" role="tabpanel">
-										<div class="p-15">
-											<div class="row">
-												<div class="col-md-6">
-													<div class="form-group">
-													  <label class="form-label">Telefone</label>
-													  <input type="text" class="form-control" placeholder="Telefone">
-													</div>
-												</div>
-												<div class="col-md-6">
-													<div class="form-group">
-													  <label class="form-label">Telefone</label>
-													  <input type="text" class="form-control" placeholder="Telefone">
-													</div>
-												</div>
-											</div>
-											<div class="row">
-												<div class="col-md-12">
-													<div class="form-group">
-													  <label class="form-label">E-mail</label>
-													  <input type="text" class="form-control" placeholder="E-mail">
-													</div>
-												</div>
-											</div>
-										</div>
-									</div>
-									<div class="tab-pane" id="endereco" role="tabpanel">
-										<div class="p-15">
-											<div class="row">
-												<div class="col-md-10">
-													<div class="form-group">
-													  <label class="form-label">Logradouro</label>
-													  <input type="text" class="form-control" placeholder="Logradouro">
-													</div>
-												</div>
-												<div class="col-md-2">
-													<div class="form-group">
-													  <label class="form-label">Número</label>
-													  <input type="text" class="form-control" placeholder="Número">
-													</div>
-												</div>
-											</div>
-											<div class="row">
-												<div class="col-md-4">
-													<div class="form-group">
-													  <label class="form-label">Bairro</label>
-													  <input type="text" class="form-control" placeholder="Bairro">
-													</div>
-												</div>
-												<div class="col-md-3">
-													<div class="form-group">
-													  <label class="form-label">Cidade</label>
-													<select class="form-control select2" style="width: 100%;">
-													  <option selected="selected">Cidade</option>
-													  <option>Lista de Cidades</option>
-													</select>
-													</div>
-												</div>
-												<div class="col-md-2">
-													<div class="form-group">
-													  <label class="form-label">UF</label>
-													  <select class="form-control select2" style="width: 100%;">
-														<option selected="selected">UF</option>
-														<option>Lista de UF</option>
-													  </select>
-													</div>
-												</div>
-												<div class="col-md-3">
-													<div class="form-group">
-													  <label class="form-label">País</label>
-													  <select class="form-control select2" style="width: 100%;">
-														<option selected="selected">País</option>
-														<option>Lista de Paises</option>
-													  </select>
-													</div>
-												</div>
-											</div>
-											<div class="row">
-												<div class="col-md-9">
-													<div class="form-group">
-													  <label class="form-label">Complemento</label>
-													  <input type="text" class="form-control" placeholder="Complemento">
-													</div>
-												</div>
-												<div class="col-md-3">
-													<div class="form-group">
-													  <label class="form-label">CEP</label>
-													  <input type="text" class="form-control" placeholder="CEP">
-													</div>
-												</div>
-											</div>
-										</div>
-									</div>
-								</div>
-							</div>
-						</div>
-					</div>
-				</div>
-			</div>
-		</section>
-		<!-- /.content -->
-	  
-	  </div>
-  </div>
-  <!-- /.content-wrapper -->
- 
-   {Incluir footer aqui}
-</div>
-<!-- ./wrapper -->
-	
-	
-	<!-- Vendor JS -->
-	<script src="assets/js/vendors.min.js"></script>
-	<script src="assets/js/pages/chat-popup.js"></script>
-    <script src="assets/icons/feather-icons/feather.min.js"></script>	
-	<script src="assets/vendor_components/sweetalert/sweetalert.min.js"></script>
-    <script src="assets/vendor_components/sweetalert/jquery.sweet-alert.custom.js"></script>
-	<script src="assets/js/template.js"></script>
-	<script src="assets/vendor_components/select2/dist/js/select2.full.js"></script>
-
-	<script src="assets/js/pages/advanced-form-element.js"></script>
-
-
-</body>
-</html>
