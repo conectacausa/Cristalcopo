@@ -119,25 +119,19 @@
                                     <ul class="nav nav-tabs nav-fill" role="tablist">
                                         <li class="nav-item">
                                             <a class="nav-link active" data-bs-toggle="tab" href="#fiscal" role="tab">
-                                                <span>
-                                                    <i class="fa fa-institution"></i>
-                                                </span>
+                                                <span><i class="fa fa-institution"></i></span>
                                                 <span class="hidden-xs-down ms-15">Fiscal</span>
                                             </a>
                                         </li>
                                         <li class="nav-item">
                                             <a class="nav-link" data-bs-toggle="tab" href="#contato" role="tab">
-                                                <span>
-                                                    <i class="fa fa-phone"></i>
-                                                </span>
+                                                <span><i class="fa fa-phone"></i></span>
                                                 <span class="hidden-xs-down ms-15">Contato</span>
                                             </a>
                                         </li>
                                         <li class="nav-item">
                                             <a class="nav-link" data-bs-toggle="tab" href="#endereco" role="tab">
-                                                <span>
-                                                    <i class="fa fa-map"></i>
-                                                </span>
+                                                <span><i class="fa fa-map"></i></span>
                                                 <span class="hidden-xs-down ms-15">Endereço</span>
                                             </a>
                                         </li>
@@ -213,7 +207,6 @@
                                                                 name="data_abertura"
                                                                 id="data_abertura"
                                                                 class="form-control @error('data_abertura') is-invalid @enderror"
-                                                                placeholder="Data Abertura"
                                                                 value="{{ old('data_abertura') }}"
                                                             >
                                                             @error('data_abertura')
@@ -284,7 +277,6 @@
                                                                 placeholder="Descrição CNAE"
                                                                 readonly
                                                             >
-                                                            <input type="hidden" id="cnae_subclasse_normalizada">
                                                         </div>
                                                     </div>
 
@@ -536,16 +528,17 @@
                                                 </div>
                                             </div>
                                         </div>
-                                    </div> {{-- tab-content --}}
-                                </div> {{-- row tabs --}}
-                            </div> {{-- box-body --}}
+                                    </div>
+                                </div>
+
+                            </div>
 
                             <div class="box-footer text-end">
                                 <button type="submit" class="waves-effect waves-light btn mb-5 bg-gradient-success">
                                     Salvar
                                 </button>
                             </div>
-                        </div> {{-- box --}}
+                        </div>
                     </div>
                 </div>
             </form>
@@ -555,25 +548,35 @@
 @endsection
 
 @section('scripts')
+@php
+    $portesJs = $portes->map(function ($item) {
+        return [
+            'id' => $item->id,
+            'codigo' => (string) $item->codigo,
+            'descricao' => $item->descricao,
+        ];
+    })->values();
+
+    $naturezasJs = $naturezasJuridicas->map(function ($item) {
+        return [
+            'id' => $item->id,
+            'codigo' => (string) $item->codigo,
+            'descricao' => $item->descricao,
+        ];
+    })->values();
+
+    $oldCnaesJs = old('cnaes', []);
+@endphp
+
 <script>
 document.addEventListener('DOMContentLoaded', function () {
-    const portes = @json($portes->map(fn($item) => [
-        'id' => $item->id,
-        'codigo' => (string) $item->codigo,
-        'descricao' => $item->descricao,
-    ])->values());
-
-    const naturezas = @json($naturezasJuridicas->map(fn($item) => [
-        'id' => $item->id,
-        'codigo' => (string) $item->codigo,
-        'descricao' => $item->descricao,
-    ])->values());
-
-    const oldCnaes = @json(old('cnaes', []));
-
-    const csrfToken = document.querySelector('meta[name="csrf-token"]')
-        ? document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-        : '{{ csrf_token() }}';
+    const portes = @json($portesJs);
+    const naturezas = @json($naturezasJs);
+    const oldCnaes = @json($oldCnaesJs);
+    const oldPaisId = @json(old('pais_id'));
+    const oldEstadoId = @json(old('estado_id'));
+    const oldCidadeId = @json(old('cidade_id'));
+    const csrfToken = @json(csrf_token());
 
     const cnpjInput = document.getElementById('cnpj');
     const btnConsultarCnpj = document.getElementById('btn-consultar-cnpj');
@@ -610,10 +613,8 @@ document.addEventListener('DOMContentLoaded', function () {
 
     const cnaeSubclasseInput = document.getElementById('cnae_subclasse');
     const cnaeDescricaoInput = document.getElementById('cnae_descricao');
-    const cnaeSubclasseNormalizadaInput = document.getElementById('cnae_subclasse_normalizada');
     const btnAdicionarCnae = document.getElementById('btn-adicionar-cnae');
     const tabelaCnaesBody = document.getElementById('tabela-cnaes-body');
-    const linhaSemCnae = document.getElementById('linha-sem-cnae');
     const cnaesHiddenContainer = document.getElementById('cnaes-hidden-container');
 
     let cnaes = [];
@@ -639,7 +640,7 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     function onlyNumbers(value) {
-        return (value || '').replace(/\D+/g, '');
+        return String(value || '').replace(/\D+/g, '');
     }
 
     function maskCnpj(value) {
@@ -661,26 +662,27 @@ document.addEventListener('DOMContentLoaded', function () {
         value = onlyNumbers(value).slice(0, 11);
 
         if (value.length <= 10) {
-            value = value.replace(/^(\d{2})(\d)/g, '($1) $2');
+            value = value.replace(/^(\d{2})(\d)/, '($1) $2');
             value = value.replace(/(\d{4})(\d)/, '$1-$2');
             return value;
         }
 
-        value = value.replace(/^(\d{2})(\d)/g, '($1) $2');
+        value = value.replace(/^(\d{2})(\d)/, '($1) $2');
         value = value.replace(/(\d{5})(\d)/, '$1-$2');
         return value;
     }
 
-    function normalizeCnaeFromDigits(digits) {
-        digits = onlyNumbers(digits).slice(0, 7);
+    function formatCnaeInput(value) {
+        let digits = onlyNumbers(value).slice(0, 7);
 
         if (digits.length <= 2) return digits;
         if (digits.length <= 4) return digits.slice(0, 2) + '.' + digits.slice(2);
         if (digits.length <= 5) return digits.slice(0, 2) + '.' + digits.slice(2, 4) + '-' + digits.slice(4);
+
         return digits.slice(0, 2) + '.' + digits.slice(2, 4) + '-' + digits.slice(4, 5) + '-' + digits.slice(5);
     }
 
-    function normalizeCnaeToSave(value) {
+    function normalizeCnae(value) {
         const digits = onlyNumbers(value);
 
         if (digits.length !== 7) {
@@ -704,25 +706,29 @@ document.addEventListener('DOMContentLoaded', function () {
 
     function setSelectValue(selectEl, value) {
         selectEl.value = value ? String(value) : '';
+
         if (window.jQuery && $(selectEl).hasClass('select2-hidden-accessible')) {
             $(selectEl).trigger('change.select2');
         }
     }
 
-    function fillOptions(selectEl, items, placeholder, selectedValue, labelFn) {
+    function fillOptions(selectEl, items, placeholder, selectedValue, formatter) {
         selectEl.innerHTML = '';
-        const optionPlaceholder = document.createElement('option');
-        optionPlaceholder.value = '';
-        optionPlaceholder.textContent = placeholder;
-        selectEl.appendChild(optionPlaceholder);
 
-        items.forEach(item => {
+        const placeholderOption = document.createElement('option');
+        placeholderOption.value = '';
+        placeholderOption.textContent = placeholder;
+        selectEl.appendChild(placeholderOption);
+
+        items.forEach(function (item) {
             const option = document.createElement('option');
             option.value = item.id;
-            option.textContent = labelFn ? labelFn(item) : item.nome;
+            option.textContent = formatter ? formatter(item) : item.nome;
+
             if (selectedValue && String(selectedValue) === String(item.id)) {
                 option.selected = true;
             }
+
             selectEl.appendChild(option);
         });
 
@@ -731,16 +737,21 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     }
 
-    async function loadEstados(paisId, selectedEstadoId = null) {
-        fillOptions(estadoSelect, [], 'UF', null, item => item.uf ? item.uf : item.nome);
-        fillOptions(cidadeSelect, [], 'Cidade', null, item => item.nome);
+    async function loadEstados(paisId, selectedEstadoId) {
+        fillOptions(estadoSelect, [], 'UF', null, function (item) {
+            return item.uf ? item.uf : item.nome;
+        });
+
+        fillOptions(cidadeSelect, [], 'Cidade', null, function (item) {
+            return item.nome;
+        });
 
         if (!paisId) {
             return;
         }
 
         try {
-            const response = await fetch(`{{ url('/empresa/filiais/ajax/estados') }}/${paisId}`, {
+            const response = await fetch("{{ url('/empresa/filiais/ajax/estados') }}/" + paisId, {
                 headers: {
                     'X-Requested-With': 'XMLHttpRequest'
                 }
@@ -748,21 +759,25 @@ document.addEventListener('DOMContentLoaded', function () {
 
             const estados = await response.json();
 
-            fillOptions(estadoSelect, estados, 'UF', selectedEstadoId, item => item.uf ? item.uf : item.nome);
+            fillOptions(estadoSelect, estados, 'UF', selectedEstadoId, function (item) {
+                return item.uf ? item.uf : item.nome;
+            });
         } catch (error) {
             toastrError('Não foi possível carregar os estados.');
         }
     }
 
-    async function loadCidades(estadoId, selectedCidadeId = null) {
-        fillOptions(cidadeSelect, [], 'Cidade', null, item => item.nome);
+    async function loadCidades(estadoId, selectedCidadeId) {
+        fillOptions(cidadeSelect, [], 'Cidade', null, function (item) {
+            return item.nome;
+        });
 
         if (!estadoId) {
             return;
         }
 
         try {
-            const response = await fetch(`{{ url('/empresa/filiais/ajax/cidades') }}/${estadoId}`, {
+            const response = await fetch("{{ url('/empresa/filiais/ajax/cidades') }}/" + estadoId, {
                 headers: {
                     'X-Requested-With': 'XMLHttpRequest'
                 }
@@ -770,7 +785,9 @@ document.addEventListener('DOMContentLoaded', function () {
 
             const cidades = await response.json();
 
-            fillOptions(cidadeSelect, cidades, 'Cidade', selectedCidadeId, item => item.nome);
+            fillOptions(cidadeSelect, cidades, 'Cidade', selectedCidadeId, function (item) {
+                return item.nome;
+            });
         } catch (error) {
             toastrError('Não foi possível carregar as cidades.');
         }
@@ -785,7 +802,9 @@ document.addEventListener('DOMContentLoaded', function () {
             return;
         }
 
-        const found = localCollection.find(item => String(item.codigo).trim() === code);
+        const found = localCollection.find(function (item) {
+            return String(item.codigo).trim() === code;
+        });
 
         if (found) {
             idInput.value = found.id;
@@ -799,15 +818,15 @@ document.addEventListener('DOMContentLoaded', function () {
     function buildCnaeHiddenInputs() {
         cnaesHiddenContainer.innerHTML = '';
 
-        cnaes.forEach((item, index) => {
+        cnaes.forEach(function (item, index) {
             const inputSubclasse = document.createElement('input');
             inputSubclasse.type = 'hidden';
-            inputSubclasse.name = `cnaes[${index}][subclasse]`;
+            inputSubclasse.name = 'cnaes[' + index + '][subclasse]';
             inputSubclasse.value = item.subclasse;
 
             const inputPrincipal = document.createElement('input');
             inputPrincipal.type = 'hidden';
-            inputPrincipal.name = `cnaes[${index}][principal]`;
+            inputPrincipal.name = 'cnaes[' + index + '][principal]';
             inputPrincipal.value = item.principal ? '1' : '0';
 
             cnaesHiddenContainer.appendChild(inputSubclasse);
@@ -815,57 +834,8 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
-    function renderTabelaCnaes() {
-        const ordered = [...cnaes].sort((a, b) => {
-            if (a.principal !== b.principal) {
-                return a.principal ? -1 : 1;
-            }
-            return a.subclasse.localeCompare(b.subclasse);
-        });
-
-        tabelaCnaesBody.innerHTML = '';
-
-        if (!ordered.length) {
-            const tr = document.createElement('tr');
-            tr.id = 'linha-sem-cnae';
-            tr.innerHTML = `<td colspan="4" class="text-center">Nenhum CNAE adicionado.</td>`;
-            tabelaCnaesBody.appendChild(tr);
-            buildCnaeHiddenInputs();
-            return;
-        }
-
-        const hasPrincipal = ordered.some(item => item.principal);
-
-        ordered.forEach((item, index) => {
-            const tr = document.createElement('tr');
-
-            tr.innerHTML = `
-                <td align="center">
-                    <input type="checkbox"
-                        class="form-check-input cnae-principal-checkbox"
-                        data-index="${index}"
-                        ${item.principal ? 'checked' : ''}
-                        ${hasPrincipal && !item.principal ? 'disabled' : ''}>
-                </td>
-                <td>${item.subclasse}</td>
-                <td>${item.descricao}</td>
-                <td align="center">
-                    <button type="button" class="btn btn-danger btn-sm btn-remover-cnae" data-index="${index}">
-                        <i class="fa fa-trash-o"></i>
-                    </button>
-                </td>
-            `;
-
-            tabelaCnaesBody.appendChild(tr);
-        });
-
-        cnaes = ordered;
-        buildCnaeHiddenInputs();
-        bindCnaeEvents();
-    }
-
     function bindCnaeEvents() {
-        document.querySelectorAll('.btn-remover-cnae').forEach(button => {
+        document.querySelectorAll('.btn-remover-cnae').forEach(function (button) {
             button.addEventListener('click', function () {
                 const index = Number(this.getAttribute('data-index'));
                 cnaes.splice(index, 1);
@@ -873,18 +843,26 @@ document.addEventListener('DOMContentLoaded', function () {
             });
         });
 
-        document.querySelectorAll('.cnae-principal-checkbox').forEach(checkbox => {
+        document.querySelectorAll('.cnae-principal-checkbox').forEach(function (checkbox) {
             checkbox.addEventListener('change', function () {
                 const index = Number(this.getAttribute('data-index'));
                 const checked = this.checked;
 
-                cnaes = cnaes.map((item, idx) => {
+                cnaes = cnaes.map(function (item, idx) {
                     if (idx === index) {
-                        return { ...item, principal: checked };
+                        return {
+                            subclasse: item.subclasse,
+                            descricao: item.descricao,
+                            principal: checked
+                        };
                     }
 
                     if (checked) {
-                        return { ...item, principal: false };
+                        return {
+                            subclasse: item.subclasse,
+                            descricao: item.descricao,
+                            principal: false
+                        };
                     }
 
                     return item;
@@ -895,9 +873,59 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
+    function renderTabelaCnaes() {
+        const ordered = cnaes.slice().sort(function (a, b) {
+            if (a.principal !== b.principal) {
+                return a.principal ? -1 : 1;
+            }
+
+            return a.subclasse.localeCompare(b.subclasse);
+        });
+
+        tabelaCnaesBody.innerHTML = '';
+
+        if (!ordered.length) {
+            const tr = document.createElement('tr');
+            tr.id = 'linha-sem-cnae';
+            tr.innerHTML = '<td colspan="4" class="text-center">Nenhum CNAE adicionado.</td>';
+            tabelaCnaesBody.appendChild(tr);
+            cnaes = ordered;
+            buildCnaeHiddenInputs();
+            return;
+        }
+
+        const hasPrincipal = ordered.some(function (item) {
+            return item.principal;
+        });
+
+        ordered.forEach(function (item, index) {
+            const tr = document.createElement('tr');
+
+            tr.innerHTML =
+                '<td align="center">' +
+                    '<input type="checkbox" class="form-check-input cnae-principal-checkbox" data-index="' + index + '" ' +
+                    (item.principal ? 'checked' : '') + ' ' +
+                    (hasPrincipal && !item.principal ? 'disabled' : '') +
+                    '>' +
+                '</td>' +
+                '<td>' + item.subclasse + '</td>' +
+                '<td>' + item.descricao + '</td>' +
+                '<td align="center">' +
+                    '<button type="button" class="btn btn-danger btn-sm btn-remover-cnae" data-index="' + index + '">' +
+                        '<i class="fa fa-trash-o"></i>' +
+                    '</button>' +
+                '</td>';
+
+            tabelaCnaesBody.appendChild(tr);
+        });
+
+        cnaes = ordered;
+        buildCnaeHiddenInputs();
+        bindCnaeEvents();
+    }
+
     async function buscarDescricaoCnae() {
-        const subclasse = normalizeCnaeToSave(cnaeSubclasseInput.value);
-        cnaeSubclasseNormalizadaInput.value = subclasse;
+        const subclasse = normalizeCnae(cnaeSubclasseInput.value);
         cnaeDescricaoInput.value = '';
 
         if (onlyNumbers(subclasse).length !== 7) {
@@ -905,7 +933,7 @@ document.addEventListener('DOMContentLoaded', function () {
         }
 
         try {
-            const response = await fetch(`{{ url('/empresa/filiais/ajax/cnae') }}/${encodeURIComponent(subclasse)}`, {
+            const response = await fetch("{{ url('/empresa/filiais/ajax/cnae') }}/" + encodeURIComponent(subclasse), {
                 headers: {
                     'X-Requested-With': 'XMLHttpRequest'
                 }
@@ -934,7 +962,7 @@ document.addEventListener('DOMContentLoaded', function () {
         setLoadingConsulta(true);
 
         try {
-            const response = await fetch(`{{ url('/empresa/filiais/ajax/cnpj') }}/${cnpj}`, {
+            const response = await fetch("{{ url('/empresa/filiais/ajax/cnpj') }}/" + cnpj, {
                 headers: {
                     'X-Requested-With': 'XMLHttpRequest',
                     'X-CSRF-TOKEN': csrfToken,
@@ -983,9 +1011,14 @@ document.addEventListener('DOMContentLoaded', function () {
             cepInput.value = maskCep(api.cep || '');
             emailInput.value = api.email || '';
 
-            if (Array.isArray(api.telefones) && api.telefones.length) {
-                const tel1 = api.telefones[0] ? `${api.telefones[0].ddd || ''}${api.telefones[0].numero || ''}` : '';
-                const tel2 = api.telefones[1] ? `${api.telefones[1].ddd || ''}${api.telefones[1].numero || ''}` : '';
+            if (Array.isArray(api.telefones) && api.telefones.length > 0) {
+                const tel1 = api.telefones[0]
+                    ? String(api.telefones[0].ddd || '') + String(api.telefones[0].numero || '')
+                    : '';
+
+                const tel2 = api.telefones[1]
+                    ? String(api.telefones[1].ddd || '') + String(api.telefones[1].numero || '')
+                    : '';
 
                 telefone1Input.value = maskPhone(tel1);
                 telefone2Input.value = maskPhone(tel2);
@@ -1009,24 +1042,23 @@ document.addEventListener('DOMContentLoaded', function () {
             const seen = new Set();
 
             if (refs.cnae_principal && refs.cnae_principal.subclasse) {
-                const key = refs.cnae_principal.subclasse;
-                if (!seen.has(key)) {
+                if (!seen.has(refs.cnae_principal.subclasse)) {
                     importedCnaes.push({
                         subclasse: refs.cnae_principal.subclasse,
                         descricao: refs.cnae_principal.descricao || 'CNAE importado via API',
-                        principal: true,
+                        principal: true
                     });
-                    seen.add(key);
+                    seen.add(refs.cnae_principal.subclasse);
                 }
             }
 
             if (Array.isArray(refs.cnaes_secundarios)) {
-                refs.cnaes_secundarios.forEach(item => {
+                refs.cnaes_secundarios.forEach(function (item) {
                     if (item && item.subclasse && !seen.has(item.subclasse)) {
                         importedCnaes.push({
                             subclasse: item.subclasse,
                             descricao: item.descricao || 'CNAE importado via API',
-                            principal: false,
+                            principal: false
                         });
                         seen.add(item.subclasse);
                     }
@@ -1071,7 +1103,7 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
     cnaeSubclasseInput.addEventListener('input', function () {
-        this.value = normalizeCnaeFromDigits(this.value);
+        this.value = formatCnaeInput(this.value);
     });
 
     cnaeSubclasseInput.addEventListener('blur', function () {
@@ -1079,8 +1111,8 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
     btnAdicionarCnae.addEventListener('click', function () {
-        const subclasse = normalizeCnaeToSave(cnaeSubclasseInput.value);
-        const descricao = (cnaeDescricaoInput.value || '').trim();
+        const subclasse = normalizeCnae(cnaeSubclasseInput.value);
+        const descricao = String(cnaeDescricaoInput.value || '').trim();
 
         if (onlyNumbers(subclasse).length !== 7) {
             toastrError('Informe uma subclasse CNAE válida.');
@@ -1092,7 +1124,9 @@ document.addEventListener('DOMContentLoaded', function () {
             return;
         }
 
-        const exists = cnaes.some(item => item.subclasse === subclasse);
+        const exists = cnaes.some(function (item) {
+            return item.subclasse === subclasse;
+        });
 
         if (exists) {
             toastrError('Este CNAE já foi adicionado.');
@@ -1102,24 +1136,21 @@ document.addEventListener('DOMContentLoaded', function () {
         cnaes.push({
             subclasse: subclasse,
             descricao: descricao,
-            principal: cnaes.length === 0,
+            principal: cnaes.length === 0
         });
 
         cnaeSubclasseInput.value = '';
         cnaeDescricaoInput.value = '';
-        cnaeSubclasseNormalizadaInput.value = '';
 
         renderTabelaCnaes();
     });
 
     paisSelect.addEventListener('change', async function () {
-        const paisId = this.value;
-        await loadEstados(paisId, null);
+        await loadEstados(this.value, null);
     });
 
     estadoSelect.addEventListener('change', async function () {
-        const estadoId = this.value;
-        await loadCidades(estadoId, null);
+        await loadCidades(this.value, null);
     });
 
     document.getElementById('form-filial').addEventListener('submit', function () {
@@ -1129,47 +1160,26 @@ document.addEventListener('DOMContentLoaded', function () {
     applyLookup(portes, porteCodigoInput, porteIdInput, porteDescricaoInput);
     applyLookup(naturezas, naturezaCodigoInput, naturezaIdInput, naturezaDescricaoInput);
 
-    if (oldCnaes && Array.isArray(oldCnaes) && oldCnaes.length) {
+    if (Array.isArray(oldCnaes) && oldCnaes.length) {
         cnaes = oldCnaes
-            .filter(item => item && item.subclasse)
-            .map(item => ({
-                subclasse: normalizeCnaeToSave(item.subclasse),
-                descricao: item.descricao || 'CNAE selecionado',
-                principal: String(item.principal) === '1' || item.principal === true,
-            }));
+            .filter(function (item) {
+                return item && item.subclasse;
+            })
+            .map(function (item) {
+                return {
+                    subclasse: normalizeCnae(item.subclasse),
+                    descricao: item.descricao || 'CNAE selecionado',
+                    principal: String(item.principal) === '1' || item.principal === true
+                };
+            });
 
-        const missingDescriptions = cnaes.filter(item => !item.descricao || item.descricao === 'CNAE selecionado');
-
-        if (!missingDescriptions.length) {
-            renderTabelaCnaes();
-        } else {
-            Promise.all(
-                cnaes.map(async item => {
-                    try {
-                        const response = await fetch(`{{ url('/empresa/filiais/ajax/cnae') }}/${encodeURIComponent(item.subclasse)}`, {
-                            headers: {
-                                'X-Requested-With': 'XMLHttpRequest'
-                            }
-                        });
-                        const result = await response.json();
-                        if (result.found && result.data) {
-                            item.descricao = result.data.descricao || item.descricao;
-                        }
-                    } catch (e) {}
-                    return item;
-                })
-            ).finally(() => renderTabelaCnaes());
-        }
+        renderTabelaCnaes();
     } else {
         renderTabelaCnaes();
     }
 
-    const oldPaisId = '{{ old('pais_id') }}';
-    const oldEstadoId = '{{ old('estado_id') }}';
-    const oldCidadeId = '{{ old('cidade_id') }}';
-
     if (oldPaisId) {
-        loadEstados(oldPaisId, oldEstadoId).then(() => {
+        loadEstados(oldPaisId, oldEstadoId).then(function () {
             if (oldEstadoId) {
                 loadCidades(oldEstadoId, oldCidadeId);
             }
