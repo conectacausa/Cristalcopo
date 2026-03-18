@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Auth\AcessoController;
 use App\Http\Controllers\Auth\LoginController;
+use App\Http\Controllers\Gestao\Empresa\EmpresaFilialController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -32,4 +33,19 @@ Route::middleware(['auth', 'user.active'])->group(function () {
     Route::view('/dashboard', 'dashboard.index')
         ->name('dashboard')
         ->middleware('screen:dashboard');
+
+    Route::prefix('empresa/filiais')
+        ->name('empresa.filiais.')
+        ->middleware('screen:empresa/filiais')
+        ->group(function () {
+            Route::get('/', [EmpresaFilialController::class, 'index'])->name('index');
+            Route::get('/create', [EmpresaFilialController::class, 'create'])->name('create');
+            Route::post('/', [EmpresaFilialController::class, 'store'])->name('store');
+            Route::get('/{id}/edit', [EmpresaFilialController::class, 'edit'])->name('edit');
+            Route::put('/{id}', [EmpresaFilialController::class, 'update'])->name('update');
+            Route::delete('/{id}', [EmpresaFilialController::class, 'destroy'])->name('destroy');
+
+            Route::get('/ajax/estados/{paisId}', [EmpresaFilialController::class, 'estadosPorPais'])->name('estados');
+            Route::get('/ajax/cidades/{estadoId}', [EmpresaFilialController::class, 'cidadesPorEstado'])->name('cidades');
+        });
 });
