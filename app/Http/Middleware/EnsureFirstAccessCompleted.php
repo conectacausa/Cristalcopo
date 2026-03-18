@@ -22,6 +22,9 @@ class EnsureFirstAccessCompleted
         if (empty($user->senha)) {
             auth()->logout();
 
+            $request->session()->invalidate();
+            $request->session()->regenerateToken();
+
             return redirect()
                 ->route('auth.acesso')
                 ->with('warning', 'Você precisa concluir o primeiro acesso antes de entrar no sistema.');
