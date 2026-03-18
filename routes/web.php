@@ -5,6 +5,7 @@ use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Gestao\Empresa\EmpresaFilialController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\CargoCboController;
+use App\Http\Controllers\Empresa\SetorController;
 
 Route::get('/', function () {
     return auth()->check()
@@ -64,5 +65,13 @@ Route::middleware(['auth', 'user.active'])->group(function () {
         Route::post('/cargos/cbo/store', [CargoCboController::class, 'store']);
         Route::post('/cargos/cbo/update/{id}', [CargoCboController::class, 'update']);
         Route::delete('/cargos/cbo/delete/{id}', [CargoCboController::class, 'delete']);
+    });
+    Route::prefix('empresa/setor')->name('empresa.setor.')->group(function () {
+        Route::get('/', [SetorController::class, 'index'])->name('index');
+        Route::get('/list', [SetorController::class, 'list'])->name('list');
+        Route::post('/store', [SetorController::class, 'store'])->name('store');
+        Route::get('/edit/{id}', [SetorController::class, 'edit'])->name('edit');
+        Route::put('/update/{id}', [SetorController::class, 'update'])->name('update');
+        Route::delete('/{id}', [SetorController::class, 'destroy'])->name('destroy');
     });
 });
