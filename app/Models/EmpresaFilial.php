@@ -74,7 +74,7 @@ class EmpresaFilial extends Model
     public function setores()
     {
         return $this->belongsToMany(
-            Setor::class,
+            EmpresaSetor::class,
             'vinculo_filial_x_setor',
             'filial_id',
             'setor_id'
