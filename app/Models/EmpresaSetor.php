@@ -29,8 +29,12 @@ class EmpresaSetor extends Model
 
     public function filiais()
     {
+        $filialClass = class_exists(\App\Models\EmpresaFilial::class)
+            ? \App\Models\EmpresaFilial::class
+            : \App\Models\Gestao\EmpresaFilial::class;
+
         return $this->belongsToMany(
-            EmpresaFilial::class,
+            $filialClass,
             'vinculo_filial_x_setor',
             'setor_id',
             'filial_id'
