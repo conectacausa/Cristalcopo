@@ -3,7 +3,6 @@
 namespace App\Http\Controllers\Empresa;
 
 use App\Http\Controllers\Controller;
-use App\Models\EmpresaSetor;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Throwable;
@@ -12,55 +11,103 @@ class SetorController extends Controller
 {
     public function index()
     {
-        $filiaisModel = $this->filialModelClass();
-        $filiais = $filiaisModel::orderBy('nome_fantasia')->get();
+        $filiais = DB::table('empresa_filial')
+            ->whereNull('deleted_at')
+            ->orderBy('nome_fantasia')
+            ->select('id', 'nome_fantasia')
+            ->get();
 
         return view('gestao.empresa.setor.index', compact('filiais'));
     }
 
     public function list(Request $request)
     {
-        $query = EmpresaSetor::with(['filiais' => function ($q) {
-            $q->orderBy('nome_fantasia');
-        }]);
+        try {
+            $query = DB::table('empresa_setores')
+                ->whereNull('deleted_at');
 
-        if ($request->filled('nome')) {
-            $query->where('descricao', 'ilike', '%' . trim($request->nome) . '%');
+            if ($request->filled('nome')) {
+                $query->where('descricao', 'ilike', '%' . trim($request->nome) . '%');
+            }
+
+            if ($request->filled('filial_id')) {
+                $filialId = (int) $request->filial_id;
+
+                $query->whereExists(function ($sub) use ($filialId) {
+                    $sub->select(DB::raw(1))
+                        ->from('vinculo_filial_x_setor')
+                        ->whereColumn('vinculo_filial_x_setor.setor_id', 'empresa_setores.id')
+                        ->where('vinculo_filial_x_setor.filial_id', $filialId);
+                });
+            }
+
+            $dados = $query
+                ->orderBy('descricao')
+                ->paginate(25);
+
+            $setorIds = collect($dados->items())->pluck('id')->all();
+
+            $filiaisPorSetor = [];
+
+            if (!empty($setorIds)) {
+                $rows = DB::table('vinculo_filial_x_setor as v')
+                    ->join('empresa_filial as f', 'f.id', '=', 'v.filial_id')
+                    ->whereIn('v.setor_id', $setorIds)
+                    ->whereNull('f.deleted_at')
+                    ->orderBy('f.nome_fantasia')
+                    ->select('v.setor_id', 'f.id as filial_id', 'f.nome_fantasia')
+                    ->get();
+
+                foreach ($rows as $row) {
+                    $filiaisPorSetor[$row->setor_id][] = [
+                        'id' => $row->filial_id,
+                        'nome' => $row->nome_fantasia,
+                    ];
+                }
+            }
+
+            foreach ($dados->items() as $item) {
+                $lista = $filiaisPorSetor[$item->id] ?? [];
+                $item->filiais_lista = $lista;
+                $item->filiais_ids = array_column($lista, 'id');
+            }
+
+            return view('gestao.empresa.setor.partials.table', compact('dados'))->render();
+        } catch (Throwable $e) {
+            return response()->json([
+                'message' => 'Erro ao carregar setores.',
+                'error' => $e->getMessage(),
+            ], 500);
         }
-
-        if ($request->filled('filial_id')) {
-            $filialId = (int) $request->filial_id;
-
-            $query->whereHas('filiais', function ($q) use ($filialId) {
-                $q->where('empresa_filial.id', $filialId);
-            });
-        }
-
-        $dados = $query
-            ->orderBy('descricao')
-            ->paginate(25);
-
-        return view('gestao.empresa.setor.partials.table', compact('dados'))->render();
     }
 
     public function store(Request $request)
     {
-        $filiaisTable = $this->filialTableName();
-
         $request->validate([
             'descricao' => ['required', 'string', 'max:255'],
             'filiais' => ['nullable', 'array'],
-            'filiais.*' => ['integer', 'exists:' . $filiaisTable . ',id'],
+            'filiais.*' => ['integer', 'exists:empresa_filial,id'],
         ]);
 
         try {
             DB::beginTransaction();
 
-            $setor = EmpresaSetor::create([
+            $setorId = DB::table('empresa_setores')->insertGetId([
                 'descricao' => trim($request->descricao),
+                'created_at' => now(),
+                'updated_at' => now(),
             ]);
 
-            $setor->filiais()->sync($request->filiais ?? []);
+            $filiais = $request->filiais ?? [];
+
+            foreach ($filiais as $filialId) {
+                DB::table('vinculo_filial_x_setor')->insert([
+                    'setor_id' => $setorId,
+                    'filial_id' => $filialId,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+            }
 
             DB::commit();
 
@@ -81,24 +128,36 @@ class SetorController extends Controller
 
     public function update(Request $request, $id)
     {
-        $filiaisTable = $this->filialTableName();
-
         $request->validate([
             'descricao' => ['required', 'string', 'max:255'],
             'filiais' => ['nullable', 'array'],
-            'filiais.*' => ['integer', 'exists:' . $filiaisTable . ',id'],
+            'filiais.*' => ['integer', 'exists:empresa_filial,id'],
         ]);
 
         try {
             DB::beginTransaction();
 
-            $setor = EmpresaSetor::findOrFail($id);
+            DB::table('empresa_setores')
+                ->where('id', $id)
+                ->update([
+                    'descricao' => trim($request->descricao),
+                    'updated_at' => now(),
+                ]);
 
-            $setor->update([
-                'descricao' => trim($request->descricao),
-            ]);
+            DB::table('vinculo_filial_x_setor')
+                ->where('setor_id', $id)
+                ->delete();
 
-            $setor->filiais()->sync($request->filiais ?? []);
+            $filiais = $request->filiais ?? [];
+
+            foreach ($filiais as $filialId) {
+                DB::table('vinculo_filial_x_setor')->insert([
+                    'setor_id' => $id,
+                    'filial_id' => $filialId,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+            }
 
             DB::commit();
 
@@ -122,9 +181,16 @@ class SetorController extends Controller
         try {
             DB::beginTransaction();
 
-            $setor = EmpresaSetor::findOrFail($id);
-            $setor->filiais()->detach();
-            $setor->delete();
+            DB::table('vinculo_filial_x_setor')
+                ->where('setor_id', $id)
+                ->delete();
+
+            DB::table('empresa_setores')
+                ->where('id', $id)
+                ->update([
+                    'deleted_at' => now(),
+                    'updated_at' => now(),
+                ]);
 
             DB::commit();
 
@@ -141,24 +207,5 @@ class SetorController extends Controller
                 'error' => $e->getMessage(),
             ], 500);
         }
-    }
-
-    private function filialModelClass(): string
-    {
-        if (class_exists(\App\Models\EmpresaFilial::class)) {
-            return \App\Models\EmpresaFilial::class;
-        }
-
-        if (class_exists(\App\Models\Gestao\EmpresaFilial::class)) {
-            return \App\Models\Gestao\EmpresaFilial::class;
-        }
-
-        abort(500, 'Model de filial não encontrado.');
-    }
-
-    private function filialTableName(): string
-    {
-        $modelClass = $this->filialModelClass();
-        return (new $modelClass)->getTable();
     }
 }
