@@ -12,8 +12,8 @@
                     <input type="hidden" id="id" name="id">
 
                     <div class="form-group">
-                        <label>Nome</label>
-                        <input type="text" name="nome" id="nome_setor" class="form-control">
+                        <label>Setor</label>
+                        <input type="text" name="descricao" id="descricao_setor" class="form-control">
                     </div>
 
                     <div class="form-group">
@@ -30,8 +30,8 @@
             </div>
 
             <div class="modal-footer">
-                <button onclick="salvar()" class="btn btn-success">Salvar</button>
-                <button class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" onclick="salvar()" class="btn btn-success">Salvar</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
             </div>
 
         </div>
