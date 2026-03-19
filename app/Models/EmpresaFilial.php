@@ -15,22 +15,31 @@ class EmpresaFilial extends Model
         'razao_social',
         'nome_fantasia',
         'cnpj',
-        'inscricao_estadual',
+        'data_abertura',
+        'porte_id',
+        'nat_juridica_id',
+        'tipo',
+        'situacao',
+        'telefone1',
+        'telefone2',
         'email',
-        'telefone',
-        'cep',
         'logradouro',
         'numero',
-        'complemento',
         'bairro',
-        'cidade',
-        'uf',
-        'pais',
-        'codigo_ibge',
-        'porte_id',
-        'natureza_juridica_id',
-        'situacao',
+        'cidade_id',
+        'estado_id',
+        'pais_id',
+        'complemento',
     ];
+
+    protected function casts(): array
+    {
+        return [
+            'data_abertura' => 'date',
+            'situacao' => 'boolean',
+            'deleted_at' => 'datetime',
+        ];
+    }
 
     public function getNomeAttribute()
     {
@@ -44,14 +53,29 @@ class EmpresaFilial extends Model
 
     public function naturezaJuridica()
     {
-        return $this->belongsTo(EmpresaNaturezaJuridica::class, 'natureza_juridica_id');
+        return $this->belongsTo(EmpresaNaturezaJuridica::class, 'nat_juridica_id');
+    }
+
+    public function pais()
+    {
+        return $this->belongsTo(GestaoPais::class, 'pais_id');
+    }
+
+    public function estado()
+    {
+        return $this->belongsTo(GestaoEstado::class, 'estado_id');
+    }
+
+    public function cidade()
+    {
+        return $this->belongsTo(GestaoCidade::class, 'cidade_id');
     }
 
     public function setores()
     {
         return $this->belongsToMany(
             Setor::class,
-            'setor_filial',
+            'vinculo_filial_x_setor',
             'filial_id',
             'setor_id'
         );
