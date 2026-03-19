@@ -9,7 +9,7 @@
     <tbody>
         @forelse($dados as $item)
             <tr>
-                <td>{{ $item->nome }}</td>
+                <td>{{ $item->descricao }}</td>
                 <td>
                     @forelse($item->filiais as $filial)
                         <div>{{ $filial->nome }}</div>
@@ -21,7 +21,7 @@
                     <div class="clearfix">
                         <button
                             class="waves-effect waves-light btn mb-5 bg-gradient-primary"
-                            onclick='editar(@json($item->id), @json($item->nome), @json($item->filiais->pluck("id")->values()))'>
+                            onclick='editar(@json($item->id), @json($item->descricao), @json($item->filiais->pluck("id")->values()))'>
                             <i class="fa fa-edit"></i>
                         </button>
 
