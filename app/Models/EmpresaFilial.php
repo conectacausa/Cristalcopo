@@ -28,6 +28,7 @@ class EmpresaFilial extends Model
         'pais',
         'codigo_ibge',
         'porte_id',
+        'natureza_juridica_id',
         'situacao',
     ];
 
@@ -51,6 +52,11 @@ class EmpresaFilial extends Model
     public function porte()
     {
         return $this->belongsTo(EmpresaPorte::class, 'porte_id');
+    }
+
+    public function naturezaJuridica()
+    {
+        return $this->belongsTo(EmpresaNaturezaJuridica::class, 'natureza_juridica_id');
     }
 
     public function setores()
