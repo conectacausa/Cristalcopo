@@ -13,8 +13,22 @@ class EmpresaFilial extends Model
 
     protected $fillable = [
         'razao_social',
+        'nome_fantasia',
         'cnpj',
-        'nome_fantasia'
+        'inscricao_estadual',
+        'email',
+        'telefone',
+        'cep',
+        'logradouro',
+        'numero',
+        'complemento',
+        'bairro',
+        'cidade',
+        'uf',
+        'pais',
+        'codigo_ibge',
+        'porte_id',
+        'situacao',
     ];
 
     /*
@@ -26,5 +40,26 @@ class EmpresaFilial extends Model
     public function getNomeAttribute()
     {
         return $this->nome_fantasia;
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | RELACIONAMENTOS
+    |--------------------------------------------------------------------------
+    */
+
+    public function porte()
+    {
+        return $this->belongsTo(EmpresaPorte::class, 'porte_id');
+    }
+
+    public function setores()
+    {
+        return $this->belongsToMany(
+            Setor::class,
+            'setor_filial',
+            'filial_id',
+            'setor_id'
+        );
     }
 }
