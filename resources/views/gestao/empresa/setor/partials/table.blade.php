@@ -11,17 +11,19 @@
             <tr>
                 <td>{{ $item->descricao }}</td>
                 <td>
-                    @forelse($item->filiais as $filial)
-                        <div>{{ $filial->nome }}</div>
-                    @empty
+                    @if(!empty($item->filiais_lista))
+                        @foreach($item->filiais_lista as $filial)
+                            <div>{{ $filial['nome'] }}</div>
+                        @endforeach
+                    @else
                         <div>-</div>
-                    @endforelse
+                    @endif
                 </td>
                 <td align="center">
                     <div class="clearfix">
                         <button
                             class="waves-effect waves-light btn mb-5 bg-gradient-primary"
-                            onclick='editar(@json($item->id), @json($item->descricao), @json($item->filiais->pluck("id")->values()))'>
+                            onclick='editar(@json($item->id), @json($item->descricao), @json($item->filiais_ids ?? []))'>
                             <i class="fa fa-edit"></i>
                         </button>
 
