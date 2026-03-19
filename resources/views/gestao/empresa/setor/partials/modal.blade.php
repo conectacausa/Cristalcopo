@@ -18,7 +18,7 @@
                     <div class="form-group">
                         <label class="form-label">Filiais</label>
 
-                        @foreach(\App\Models\EmpresaFilial::orderBy('nome_fantasia')->get() as $filial)
+                        @foreach($filiais as $filial)
                             <div class="form-check mb-5">
                                 <input
                                     class="form-check-input"
@@ -28,7 +28,7 @@
                                     value="{{ $filial->id }}"
                                 >
                                 <label class="form-check-label" for="filial_{{ $filial->id }}">
-                                    {{ $filial->nome }}
+                                    {{ $filial->nome_fantasia }}
                                 </label>
                             </div>
                         @endforeach
