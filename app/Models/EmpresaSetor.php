@@ -5,7 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
-class Setor extends Model
+class EmpresaSetor extends Model
 {
     use SoftDeletes;
 
@@ -22,6 +22,7 @@ class Setor extends Model
         ];
     }
 
+    // Alias padrão do sistema
     public function getNomeAttribute()
     {
         return $this->descricao;
