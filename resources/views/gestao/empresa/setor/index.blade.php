@@ -69,7 +69,7 @@
                                             <select id="filtro_filial" class="form-control">
                                                 <option value="">Todas as filiais</option>
                                                 @foreach($filiais as $filial)
-                                                    <option value="{{ $filial->id }}">{{ $filial->nome }}</option>
+                                                    <option value="{{ $filial->id }}">{{ $filial->nome_fantasia }}</option>
                                                 @endforeach
                                             </select>
                                         </div>
@@ -101,7 +101,7 @@
     @include('layouts.includes.footer')
 </div>
 
-@include('gestao.empresa.setor.partials.modal')
+@include('gestao.empresa.setor.partials.modal', ['filiais' => $filiais])
 
 <script src="{{ asset('assets/js/vendors.min.js') }}"></script>
 <script src="{{ asset('assets/js/pages/chat-popup.js') }}"></script>
@@ -116,7 +116,7 @@ toastr.options = {
     closeButton: true,
     progressBar: true,
     positionClass: "toast-top-right",
-    timeOut: "3000"
+    timeOut: "4000"
 };
 
 let filtroTimer = null;
@@ -125,7 +125,7 @@ function carregarTabela(page = 1) {
     $('#tabela-setores').html('<div class="text-center p-20">Carregando...</div>');
 
     $.ajax({
-        url: "{{ route('empresa.setor.list') }}",
+        url: "{{ url('/empresa/setor/list') }}",
         type: 'GET',
         data: {
             page: page,
@@ -137,10 +137,12 @@ function carregarTabela(page = 1) {
         },
         error: function (xhr) {
             console.error(xhr.responseText);
+
             let msg = 'Erro ao carregar setores';
-            if (xhr.responseJSON && xhr.responseJSON.message) {
-                msg = xhr.responseJSON.message;
+            if (xhr.responseJSON && xhr.responseJSON.error) {
+                msg = xhr.responseJSON.error;
             }
+
             toastr.error(msg);
         }
     });
@@ -180,9 +182,7 @@ function editar(id, descricao, filiais) {
 
 function salvar() {
     let id = $('#setor_id').val();
-    let url = id
-        ? "{{ url('/empresa/setor/update') }}/" + id
-        : "{{ route('empresa.setor.store') }}";
+    let url = id ? "{{ url('/empresa/setor/update') }}/" + id : "{{ url('/empresa/setor/store') }}";
 
     $.ajax({
         url: url,
@@ -199,15 +199,13 @@ function salvar() {
             let msg = 'Erro ao salvar setor';
 
             if (xhr.responseJSON) {
-                if (xhr.responseJSON.error) {
-                    console.error(xhr.responseJSON.error);
-                }
-
                 if (xhr.responseJSON.errors) {
                     const firstKey = Object.keys(xhr.responseJSON.errors)[0];
                     if (firstKey) {
                         msg = xhr.responseJSON.errors[firstKey][0];
                     }
+                } else if (xhr.responseJSON.error) {
+                    msg = xhr.responseJSON.error;
                 } else if (xhr.responseJSON.message) {
                     msg = xhr.responseJSON.message;
                 }
@@ -227,9 +225,7 @@ function excluir(id) {
         confirmButtonText: "Sim, excluir",
         cancelButtonText: "Cancelar"
     }, function (confirmado) {
-        if (!confirmado) {
-            return;
-        }
+        if (!confirmado) return;
 
         $.ajax({
             url: "{{ url('/empresa/setor/delete') }}/" + id,
@@ -245,8 +241,8 @@ function excluir(id) {
                 console.error(xhr.responseText);
 
                 let msg = 'Erro ao excluir setor';
-                if (xhr.responseJSON && xhr.responseJSON.message) {
-                    msg = xhr.responseJSON.message;
+                if (xhr.responseJSON && xhr.responseJSON.error) {
+                    msg = xhr.responseJSON.error;
                 }
 
                 toastr.error(msg);
