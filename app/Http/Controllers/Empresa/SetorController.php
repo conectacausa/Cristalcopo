@@ -3,7 +3,6 @@
 namespace App\Http\Controllers\Empresa;
 
 use App\Http\Controllers\Controller;
-use App\Models\EmpresaFilial;
 use App\Models\EmpresaSetor;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -13,7 +12,8 @@ class SetorController extends Controller
 {
     public function index()
     {
-        $filiais = EmpresaFilial::orderBy('nome_fantasia')->get();
+        $filiaisModel = $this->filialModelClass();
+        $filiais = $filiaisModel::orderBy('nome_fantasia')->get();
 
         return view('gestao.empresa.setor.index', compact('filiais'));
     }
@@ -45,10 +45,12 @@ class SetorController extends Controller
 
     public function store(Request $request)
     {
+        $filiaisTable = $this->filialTableName();
+
         $request->validate([
             'descricao' => ['required', 'string', 'max:255'],
             'filiais' => ['nullable', 'array'],
-            'filiais.*' => ['integer', 'exists:empresa_filial,id'],
+            'filiais.*' => ['integer', 'exists:' . $filiaisTable . ',id'],
         ]);
 
         try {
@@ -79,10 +81,12 @@ class SetorController extends Controller
 
     public function update(Request $request, $id)
     {
+        $filiaisTable = $this->filialTableName();
+
         $request->validate([
             'descricao' => ['required', 'string', 'max:255'],
             'filiais' => ['nullable', 'array'],
-            'filiais.*' => ['integer', 'exists:empresa_filial,id'],
+            'filiais.*' => ['integer', 'exists:' . $filiaisTable . ',id'],
         ]);
 
         try {
@@ -137,5 +141,24 @@ class SetorController extends Controller
                 'error' => $e->getMessage(),
             ], 500);
         }
+    }
+
+    private function filialModelClass(): string
+    {
+        if (class_exists(\App\Models\EmpresaFilial::class)) {
+            return \App\Models\EmpresaFilial::class;
+        }
+
+        if (class_exists(\App\Models\Gestao\EmpresaFilial::class)) {
+            return \App\Models\Gestao\EmpresaFilial::class;
+        }
+
+        abort(500, 'Model de filial não encontrado.');
+    }
+
+    private function filialTableName(): string
+    {
+        $modelClass = $this->filialModelClass();
+        return (new $modelClass)->getTable();
     }
 }
