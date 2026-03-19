@@ -3,9 +3,11 @@
 namespace App\Http\Controllers\Empresa;
 
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
-use App\Models\EmpresaSetor;
 use App\Models\EmpresaFilial;
+use App\Models\EmpresaSetor;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Throwable;
 
 class SetorController extends Controller
 {
@@ -18,21 +20,25 @@ class SetorController extends Controller
 
     public function list(Request $request)
     {
-        $query = EmpresaSetor::with('filiais');
+        $query = EmpresaSetor::with(['filiais' => function ($q) {
+            $q->orderBy('nome_fantasia');
+        }]);
 
         if ($request->filled('nome')) {
-            $query->where('descricao', 'ilike', '%' . $request->nome . '%');
+            $query->where('descricao', 'ilike', '%' . trim($request->nome) . '%');
         }
 
         if ($request->filled('filial_id')) {
-            $filialId = $request->filial_id;
+            $filialId = (int) $request->filial_id;
 
             $query->whereHas('filiais', function ($q) use ($filialId) {
                 $q->where('empresa_filial.id', $filialId);
             });
         }
 
-        $dados = $query->orderBy('descricao')->paginate(25);
+        $dados = $query
+            ->orderBy('descricao')
+            ->paginate(25);
 
         return view('gestao.empresa.setor.partials.table', compact('dados'))->render();
     }
@@ -40,44 +46,96 @@ class SetorController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'descricao' => 'required|string|max:255',
-            'filiais' => 'nullable|array',
-            'filiais.*' => 'integer',
+            'descricao' => ['required', 'string', 'max:255'],
+            'filiais' => ['nullable', 'array'],
+            'filiais.*' => ['integer', 'exists:empresa_filial,id'],
         ]);
 
-        $setor = EmpresaSetor::create([
-            'descricao' => $request->descricao,
-        ]);
+        try {
+            DB::beginTransaction();
 
-        $setor->filiais()->sync($request->filiais ?? []);
+            $setor = EmpresaSetor::create([
+                'descricao' => trim($request->descricao),
+            ]);
 
-        return response()->json(['success' => true]);
+            $setor->filiais()->sync($request->filiais ?? []);
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Setor salvo com sucesso.',
+            ]);
+        } catch (Throwable $e) {
+            DB::rollBack();
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Erro ao salvar setor.',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
     }
 
     public function update(Request $request, $id)
     {
         $request->validate([
-            'descricao' => 'required|string|max:255',
-            'filiais' => 'nullable|array',
-            'filiais.*' => 'integer',
+            'descricao' => ['required', 'string', 'max:255'],
+            'filiais' => ['nullable', 'array'],
+            'filiais.*' => ['integer', 'exists:empresa_filial,id'],
         ]);
 
-        $setor = EmpresaSetor::findOrFail($id);
+        try {
+            DB::beginTransaction();
 
-        $setor->update([
-            'descricao' => $request->descricao,
-        ]);
+            $setor = EmpresaSetor::findOrFail($id);
 
-        $setor->filiais()->sync($request->filiais ?? []);
+            $setor->update([
+                'descricao' => trim($request->descricao),
+            ]);
 
-        return response()->json(['success' => true]);
+            $setor->filiais()->sync($request->filiais ?? []);
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Setor atualizado com sucesso.',
+            ]);
+        } catch (Throwable $e) {
+            DB::rollBack();
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Erro ao atualizar setor.',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
     }
 
     public function delete($id)
     {
-        $setor = EmpresaSetor::findOrFail($id);
-        $setor->delete();
+        try {
+            DB::beginTransaction();
 
-        return response()->json(['success' => true]);
+            $setor = EmpresaSetor::findOrFail($id);
+            $setor->filiais()->detach();
+            $setor->delete();
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Setor excluído com sucesso.',
+            ]);
+        } catch (Throwable $e) {
+            DB::rollBack();
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Erro ao excluir setor.',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
     }
 }
