@@ -4,7 +4,7 @@ namespace App\Http\Controllers\Empresa;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
-use App\Models\Setor;
+use App\Models\EmpresaSetor;
 use App\Models\EmpresaFilial;
 
 class SetorController extends Controller
