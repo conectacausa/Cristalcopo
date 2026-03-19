@@ -18,7 +18,7 @@ class SetorController extends Controller
 
     public function list(Request $request)
     {
-        $query = Setor::with('filiais');
+        $query = EmpresaSetor::with('filiais');
 
         if ($request->filled('nome')) {
             $query->where('descricao', 'ilike', '%' . $request->nome . '%');
@@ -45,7 +45,7 @@ class SetorController extends Controller
             'filiais.*' => 'integer',
         ]);
 
-        $setor = Setor::create([
+        $setor = EmpresaSetor::create([
             'descricao' => $request->descricao,
         ]);
 
@@ -62,7 +62,7 @@ class SetorController extends Controller
             'filiais.*' => 'integer',
         ]);
 
-        $setor = Setor::findOrFail($id);
+        $setor = EmpresaSetor::findOrFail($id);
 
         $setor->update([
             'descricao' => $request->descricao,
@@ -75,7 +75,7 @@ class SetorController extends Controller
 
     public function delete($id)
     {
-        $setor = Setor::findOrFail($id);
+        $setor = EmpresaSetor::findOrFail($id);
         $setor->delete();
 
         return response()->json(['success' => true]);
