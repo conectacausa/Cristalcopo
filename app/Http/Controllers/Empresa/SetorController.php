@@ -21,7 +21,7 @@ class SetorController extends Controller
         $query = Setor::with('filiais');
 
         if ($request->filled('nome')) {
-            $query->where('nome', 'ilike', '%' . $request->nome . '%');
+            $query->where('descricao', 'ilike', '%' . $request->nome . '%');
         }
 
         if ($request->filled('filial_id')) {
@@ -32,7 +32,7 @@ class SetorController extends Controller
             });
         }
 
-        $dados = $query->orderBy('nome')->paginate(25);
+        $dados = $query->orderBy('descricao')->paginate(25);
 
         return view('gestao.empresa.setor.partials.table', compact('dados'))->render();
     }
@@ -40,13 +40,13 @@ class SetorController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'nome' => 'required|string|max:255',
+            'descricao' => 'required|string|max:255',
             'filiais' => 'nullable|array',
             'filiais.*' => 'integer',
         ]);
 
         $setor = Setor::create([
-            'nome' => $request->nome,
+            'descricao' => $request->descricao,
         ]);
 
         $setor->filiais()->sync($request->filiais ?? []);
@@ -57,7 +57,7 @@ class SetorController extends Controller
     public function update(Request $request, $id)
     {
         $request->validate([
-            'nome' => 'required|string|max:255',
+            'descricao' => 'required|string|max:255',
             'filiais' => 'nullable|array',
             'filiais.*' => 'integer',
         ]);
@@ -65,7 +65,7 @@ class SetorController extends Controller
         $setor = Setor::findOrFail($id);
 
         $setor->update([
-            'nome' => $request->nome,
+            'descricao' => $request->descricao,
         ]);
 
         $setor->filiais()->sync($request->filiais ?? []);
