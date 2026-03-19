@@ -9,14 +9,9 @@
 
     <link rel="icon" href="{{ asset('assets/images/favicon.ico') }}">
 
-    <!-- Vendors Style-->
     <link rel="stylesheet" href="{{ asset('assets/css/vendors_css.css') }}">
-
-    <!-- Style-->
     <link rel="stylesheet" href="{{ asset('assets/css/style.css') }}">
     <link rel="stylesheet" href="{{ asset('assets/css/skin_color.css') }}">
-
-    <!-- Toastr CDN -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css">
 </head>
 <body class="hold-transition light-skin sidebar-mini theme-primary fixed">
@@ -29,7 +24,6 @@
 
     <div class="content-wrapper">
         <div class="container-full">
-
             <div class="content-header">
                 <div class="d-flex align-items-center">
                     <div class="me-auto">
@@ -100,7 +94,6 @@
                     </div>
                 </div>
             </section>
-
         </div>
     </div>
 
@@ -115,7 +108,6 @@
 <script src="{{ asset('assets/vendor_components/sweetalert/sweetalert.min.js') }}"></script>
 <script src="{{ asset('assets/vendor_components/sweetalert/jquery.sweet-alert.custom.js') }}"></script>
 <script src="{{ asset('assets/js/template.js') }}"></script>
-
 <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
 
 <script>
@@ -157,10 +149,10 @@ function abrirNovo() {
     $('input[name="filiais[]"]').prop('checked', false);
 }
 
-function editar(id, nome, filiais) {
+function editar(id, descricao, filiais) {
     $('#modalSetor').modal('show');
     $('#id').val(id);
-    $('#nome_setor').val(nome);
+    $('#descricao_setor').val(descricao);
 
     $('input[name="filiais[]"]').prop('checked', false);
 
