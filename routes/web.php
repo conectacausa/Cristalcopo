@@ -66,12 +66,11 @@ Route::middleware(['auth', 'user.active'])->group(function () {
         Route::post('/cargos/cbo/update/{id}', [CargoCboController::class, 'update']);
         Route::delete('/cargos/cbo/delete/{id}', [CargoCboController::class, 'delete']);
     });
-    Route::prefix('empresa/setor')->name('empresa.setor.')->group(function () {
-        Route::get('/', [SetorController::class, 'index'])->name('index');
-        Route::get('/list', [SetorController::class, 'list'])->name('list');
-        Route::post('/store', [SetorController::class, 'store'])->name('store');
-        Route::get('/edit/{id}', [SetorController::class, 'edit'])->name('edit');
-        Route::put('/update/{id}', [SetorController::class, 'update'])->name('update');
-        Route::delete('/{id}', [SetorController::class, 'destroy'])->name('destroy');
+   Route::middleware(['auth', 'user.active', 'screen:empresa/setor'])->group(function () {
+        Route::get('/empresa/setor', [SetorController::class, 'index'])->name('empresa.setor.index');
+        Route::get('/empresa/setor/list', [SetorController::class, 'list'])->name('empresa.setor.list');
+        Route::post('/empresa/setor/store', [SetorController::class, 'store'])->name('empresa.setor.store');
+        Route::post('/empresa/setor/update/{id}', [SetorController::class, 'update'])->name('empresa.setor.update');
+        Route::delete('/empresa/setor/delete/{id}', [SetorController::class, 'delete'])->name('empresa.setor.delete');
     });
 });
