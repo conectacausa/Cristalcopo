@@ -22,7 +22,6 @@ class EmpresaSetor extends Model
         ];
     }
 
-    // Alias padrão do sistema
     public function getNomeAttribute()
     {
         return $this->descricao;
