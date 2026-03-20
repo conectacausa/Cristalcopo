@@ -6,6 +6,7 @@ use App\Http\Controllers\Gestao\Empresa\EmpresaFilialController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\CargoCboController;
 use App\Http\Controllers\Empresa\SetorController;
+use App\Http\Controllers\TesteAprovacaoController;
 
 Route::get('/', function () {
     return auth()->check()
@@ -73,4 +74,5 @@ Route::middleware(['auth', 'user.active'])->group(function () {
         Route::post('/empresa/setor/update/{id}', [SetorController::class, 'update'])->name('empresa.setor.update');
         Route::delete('/empresa/setor/delete/{id}', [SetorController::class, 'delete'])->name('empresa.setor.delete');
     });
+    Route::post('/teste-aprovacao/criar', [TesteAprovacaoController::class, 'criar']);
 });
