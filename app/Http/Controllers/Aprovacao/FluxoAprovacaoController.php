@@ -46,7 +46,7 @@ class FluxoAprovacaoController extends Controller
 
     public function create()
     {
-        $colaboradores = Colaborador::orderBy('nome')->get();
+        $colaboradores = Colaborador::orderBy('nome_completo')->get();
 
         return view('aprovacao.fluxo.create', compact('colaboradores'));
     }
