@@ -75,4 +75,5 @@ Route::middleware(['auth', 'user.active'])->group(function () {
         Route::delete('/empresa/setor/delete/{id}', [SetorController::class, 'delete'])->name('empresa.setor.delete');
     });
     Route::post('/teste-aprovacao/criar', [TesteAprovacaoController::class, 'criar']);
+    Route::get('/teste-aprovacao/criar', [TesteAprovacaoController::class, 'criar']);
 });
