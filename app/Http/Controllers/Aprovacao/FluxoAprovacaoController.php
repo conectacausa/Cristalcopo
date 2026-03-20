@@ -15,7 +15,22 @@ class FluxoAprovacaoController extends Controller
         $query = AprovacaoFluxo::query()->orderBy('id', 'desc');
 
         if ($request->filled('descricao')) {
-            $query->where('nome_fluxo', 'like', '%' . $request->descricao . '%');
+            $busca = trim($request->descricao);
+
+            $palavras = preg_split('/\s+/', $busca);
+
+            $query->where(function ($q) use ($palavras) {
+                foreach ($palavras as $palavra) {
+                    $palavra = trim($palavra);
+
+                    if (!empty($palavra)) {
+                        $q->whereRaw(
+                            "LOWER(unaccent(nome_fluxo)) LIKE LOWER(unaccent(?))",
+                            ['%' . $palavra . '%']
+                        );
+                    }
+                }
+            });
         }
 
         $fluxos = $query->get();
