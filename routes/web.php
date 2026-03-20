@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\CargoCboController;
 use App\Http\Controllers\Empresa\SetorController;
 use App\Http\Controllers\TesteAprovacaoController;
+use App\Http\Controllers\Aprovacao\FluxoAprovacaoController;
 
 Route::get('/', function () {
     return auth()->check()
@@ -74,6 +75,11 @@ Route::middleware(['auth', 'user.active'])->group(function () {
         Route::post('/empresa/setor/update/{id}', [SetorController::class, 'update'])->name('empresa.setor.update');
         Route::delete('/empresa/setor/delete/{id}', [SetorController::class, 'delete'])->name('empresa.setor.delete');
     });
-    Route::post('/teste-aprovacao/criar', [TesteAprovacaoController::class, 'criar']);
-    Route::get('/teste-aprovacao/criar', [TesteAprovacaoController::class, 'criar']);
+    Route::prefix('aprovacao/fluxo')
+    ->name('aprovacao.fluxo.')
+    ->group(function () {
+        Route::get('/', [FluxoAprovacaoController::class, 'index'])->name('index');
+        Route::get('/create', [FluxoAprovacaoController::class, 'create'])->name('create');
+        Route::post('/store', [FluxoAprovacaoController::class, 'store'])->name('store');
+    });
 });
