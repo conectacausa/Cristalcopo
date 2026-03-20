@@ -2,195 +2,193 @@
 <html lang="pt-BR">
 <head>
     <meta charset="utf-8">
-    <title>Fluxos de Aprovação</title>
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="">
+    <meta name="author" content="">
+    <link rel="icon" href="{{ asset('assets/images/favicon.ico') }}">
 
-    <style>
-        body {
-            font-family: Arial, Helvetica, sans-serif;
-            background: #f4f6f9;
-            margin: 0;
-            padding: 20px;
-            color: #333;
-        }
+    <title>Cristalcopo - Fluxo de Aprovação</title>
 
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-        }
-
-        .card {
-            background: #fff;
-            border-radius: 10px;
-            padding: 20px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.08);
-        }
-
-        .header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
-            gap: 10px;
-            flex-wrap: wrap;
-        }
-
-        .title {
-            font-size: 24px;
-            font-weight: bold;
-            margin: 0;
-        }
-
-        .btn {
-            display: inline-block;
-            padding: 10px 16px;
-            border-radius: 6px;
-            text-decoration: none;
-            font-size: 14px;
-            font-weight: bold;
-            border: none;
-            cursor: pointer;
-        }
-
-        .btn-primary {
-            background: #0d6efd;
-            color: #fff;
-        }
-
-        .btn-primary:hover {
-            background: #0b5ed7;
-        }
-
-        .alert-success {
-            background: #d1e7dd;
-            color: #0f5132;
-            border: 1px solid #badbcc;
-            border-radius: 6px;
-            padding: 12px 15px;
-            margin-bottom: 20px;
-        }
-
-        .table-responsive {
-            overflow-x: auto;
-        }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            background: #fff;
-        }
-
-        table thead th {
-            background: #f8f9fa;
-            text-align: left;
-            padding: 12px;
-            border-bottom: 1px solid #dee2e6;
-            font-size: 14px;
-        }
-
-        table tbody td {
-            padding: 12px;
-            border-bottom: 1px solid #eee;
-            font-size: 14px;
-            vertical-align: top;
-        }
-
-        .badge {
-            display: inline-block;
-            padding: 5px 10px;
-            border-radius: 20px;
-            font-size: 12px;
-            font-weight: bold;
-        }
-
-        .badge-success {
-            background: #d1e7dd;
-            color: #0f5132;
-        }
-
-        .badge-secondary {
-            background: #e2e3e5;
-            color: #41464b;
-        }
-
-        .empty {
-            text-align: center;
-            padding: 30px;
-            color: #777;
-        }
-
-        .small {
-            font-size: 12px;
-            color: #666;
-        }
-    </style>
+    <link rel="stylesheet" href="{{ asset('assets/css/vendors_css.css') }}">
+    <link rel="stylesheet" href="{{ asset('assets/css/style.css') }}">
+    <link rel="stylesheet" href="{{ asset('assets/css/skin_color.css') }}">
 </head>
-<body>
-    <div class="container">
-        <div class="card">
-            <div class="header">
-                <h1 class="title">Fluxos de Aprovação</h1>
+<body class="hold-transition light-skin sidebar-mini theme-primary fixed">
 
-                <a href="{{ route('aprovacao.fluxo.create') }}" class="btn btn-primary">
-                    Novo Fluxo
-                </a>
-            </div>
+<div class="wrapper">
+    <div id="loader"></div>
 
-            @if(session('success'))
-                <div class="alert-success">
-                    {{ session('success') }}
+    @include('layouts.includes.header')
+    @include('layouts.includes.menu')
+
+    <div class="content-wrapper">
+        <div class="container-full">
+
+            <div class="content-header">
+                <div class="d-flex align-items-center">
+                    <div class="me-auto">
+                        <h4 class="page-title">Fluxo de Aprovação</h4>
+                        <div class="d-inline-block align-items-center">
+                            <nav>
+                                <ol class="breadcrumb">
+                                    <li class="breadcrumb-item">
+                                        <a href="{{ url('/dashboard') }}">
+                                            <i class="mdi mdi-home-outline"></i>
+                                        </a>
+                                    </li>
+                                    <li class="breadcrumb-item">Configuração</li>
+                                    <li class="breadcrumb-item active" aria-current="page">Aprovações</li>
+                                </ol>
+                            </nav>
+                        </div>
+                    </div>
+
+                    <a href="{{ route('aprovacao.fluxo.create') }}"
+                       class="waves-effect waves-light btn mb-5 bg-gradient-success w-200">
+                        Novo Fluxo
+                    </a>
                 </div>
-            @endif
-
-            <div class="table-responsive">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>ID</th>
-                            <th>Nome do Fluxo</th>
-                            <th>Slug</th>
-                            <th>Tipo Referência</th>
-                            <th>Modo</th>
-                            <th>Situação</th>
-                            <th>Etapas</th>
-                            <th>Criado em</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @forelse($fluxos as $fluxo)
-                            <tr>
-                                <td>{{ $fluxo->id }}</td>
-                                <td>{{ $fluxo->nome_fluxo }}</td>
-                                <td>{{ $fluxo->slug }}</td>
-                                <td>{{ $fluxo->tipo_referencia }}</td>
-                                <td>{{ ucfirst($fluxo->modo_aprovacao) }}</td>
-                                <td>
-                                    @if($fluxo->situacao === 'ativo')
-                                        <span class="badge badge-success">Ativo</span>
-                                    @else
-                                        <span class="badge badge-secondary">Inativo</span>
-                                    @endif
-                                </td>
-                                <td>{{ $fluxo->etapas()->count() }}</td>
-                                <td>
-                                    {{ optional($fluxo->created_at)->format('d/m/Y H:i') }}
-                                </td>
-                            </tr>
-                        @empty
-                            <tr>
-                                <td colspan="8" class="empty">
-                                    Nenhum fluxo de aprovação cadastrado.
-                                </td>
-                            </tr>
-                        @endforelse
-                    </tbody>
-                </table>
             </div>
 
-            <p class="small" style="margin-top: 15px;">
-                Tela inicial do módulo de fluxos de aprovação.
-            </p>
+            <section class="content">
+
+                <div class="row">
+                    <div class="col-12">
+                        <div class="box">
+                            <div class="box-header with-border">
+                                <h4 class="box-title">Filtros</h4>
+                            </div>
+                            <div class="box-body">
+                                <form method="GET" action="{{ route('aprovacao.fluxo.index') }}">
+                                    <div class="row">
+                                        <div class="col-md-12">
+                                            <div class="form-group">
+                                                <label class="form-label">Descrição</label>
+                                                <input
+                                                    type="text"
+                                                    name="descricao"
+                                                    class="form-control"
+                                                    placeholder="Descrição"
+                                                    value="{{ request('descricao') }}"
+                                                >
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="row mt-10">
+                                        <div class="col-12">
+                                            <button type="submit" class="btn btn-primary">
+                                                Filtrar
+                                            </button>
+
+                                            <a href="{{ route('aprovacao.fluxo.index') }}" class="btn btn-secondary">
+                                                Limpar
+                                            </a>
+                                        </div>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-12">
+                        <div class="box">
+                            <div class="box-header with-border">
+                                <h4 class="box-title">Fluxo de Aprovação</h4>
+                            </div>
+                            <div class="box-body">
+                                <div class="table-responsive">
+                                    <table class="table">
+                                        <thead class="bg-primary">
+                                            <tr align="center">
+                                                <th>Nome Fluxo</th>
+                                                <th>Referência</th>
+                                                <th>Modo</th>
+                                                <th width="200">Ações</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            @forelse($fluxos as $fluxo)
+                                                <tr>
+                                                    <td>{{ $fluxo->nome_fluxo }}</td>
+                                                    <td>{{ ucfirst($fluxo->tipo_referencia) }}</td>
+                                                    <td>{{ ucfirst($fluxo->modo_aprovacao) }}</td>
+                                                    <td align="center">
+                                                        <div class="clearfix">
+                                                            <a href="javascript:void(0)"
+                                                               class="waves-effect waves-light btn mb-5 bg-gradient-primary">
+                                                                <i class="fa fa-edit"></i>
+                                                            </a>
+
+                                                            <button type="button"
+                                                                    class="waves-effect waves-light btn mb-5 bg-gradient-danger"
+                                                                    disabled>
+                                                                <i class="fa fa-trash-o"></i>
+                                                            </button>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            @empty
+                                                <tr>
+                                                    <td colspan="4" class="text-center">
+                                                        Nenhum fluxo de aprovação cadastrado.
+                                                    </td>
+                                                </tr>
+                                            @endforelse
+                                        </tbody>
+                                    </table>
+                                </div>
+
+                                @if(method_exists($fluxos, 'links'))
+                                    <div class="mt-3">
+                                        {{ $fluxos->links() }}
+                                    </div>
+                                @endif
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </section>
         </div>
     </div>
+
+    @include('layouts.includes.footer')
+</div>
+
+<script src="{{ asset('assets/js/vendors.min.js') }}"></script>
+<script src="{{ asset('assets/js/pages/chat-popup.js') }}"></script>
+<script src="{{ asset('assets/icons/feather-icons/feather.min.js') }}"></script>
+<script src="{{ asset('assets/vendor_components/sweetalert/sweetalert.min.js') }}"></script>
+<script src="{{ asset('assets/vendor_components/sweetalert/jquery.sweet-alert.custom.js') }}"></script>
+<script src="{{ asset('assets/js/template.js') }}"></script>
+
+@if(session('success'))
+    <script>
+        toastr.success(@json(session('success')));
+    </script>
+@endif
+
+@if(session('error'))
+    <script>
+        toastr.error(@json(session('error')));
+    </script>
+@endif
+
+@if(session('warning'))
+    <script>
+        toastr.warning(@json(session('warning')));
+    </script>
+@endif
+
+@if(session('info'))
+    <script>
+        toastr.info(@json(session('info')));
+    </script>
+@endif
+
 </body>
 </html>
