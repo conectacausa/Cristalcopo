@@ -13,6 +13,8 @@
     <link rel="stylesheet" href="{{ asset('assets/css/vendors_css.css') }}">
     <link rel="stylesheet" href="{{ asset('assets/css/style.css') }}">
     <link rel="stylesheet" href="{{ asset('assets/css/skin_color.css') }}">
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+    <link href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" rel="stylesheet" />
 
     <style>
         .etapa-card {
@@ -273,6 +275,7 @@
 </div>
 
 <script src="{{ asset('assets/js/vendors.min.js') }}"></script>
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 <script src="{{ asset('assets/js/pages/chat-popup.js') }}"></script>
 <script src="{{ asset('assets/icons/feather-icons/feather.min.js') }}"></script>
 <script src="{{ asset('assets/vendor_components/sweetalert/sweetalert.min.js') }}"></script>
@@ -299,18 +302,20 @@
     }
 
     function inicializarSelectBusca(context) {
-        context.find('.select-aprovadores').each(function() {
-            if ($(this).hasClass('select2-hidden-accessible')) {
-                return;
-            }
+    context.find('.select-aprovadores').each(function() {
+        if ($(this).hasClass('select2-hidden-accessible')) {
+            return;
+        }
 
-            $(this).select2({
-                width: '100%',
-                placeholder: $(this).data('placeholder') || 'Selecione',
-                allowClear: false
-            });
+        $(this).select2({
+            theme: 'bootstrap-5',
+            width: '100%',
+            placeholder: $(this).data('placeholder') || 'Selecione',
+            closeOnSelect: false,
+            allowClear: false
         });
-    }
+    });
+}
 
     function atualizarTitulosEtapas() {
         $('.etapa-item').each(function(index) {
