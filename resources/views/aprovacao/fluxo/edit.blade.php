@@ -4,15 +4,18 @@
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="">
+    <meta name="author" content="">
+    <link rel="icon" href="{{ asset('assets/images/favicon.ico') }}">
 
-    <title>Cristalcopo - Editar Fluxo</title>
+    <title>Cristalcopo - Editar Fluxo de Aprovação</title>
 
     <link rel="stylesheet" href="{{ asset('assets/css/vendors_css.css') }}">
     <link rel="stylesheet" href="{{ asset('assets/css/style.css') }}">
     <link rel="stylesheet" href="{{ asset('assets/css/skin_color.css') }}">
 
-    <!-- Select2 -->
     <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+    <link href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" rel="stylesheet" />
 
     <style>
         .etapa-card {
@@ -23,16 +26,26 @@
             background: #fdfdfd;
         }
 
+        .etapa-card:last-child {
+            margin-bottom: 0;
+        }
+
+        .select2-container .select2-selection--multiple {
+            min-height: 42px !important;
+            border: 1px solid #d9d9d9 !important;
+            border-radius: 0.25rem !important;
+            padding: 4px 8px !important;
+        }
+
+        .select2-container--bootstrap-5 .select2-selection {
+            box-shadow: none !important;
+        }
+
         .select2-container {
             width: 100% !important;
         }
-
-        .select2-selection--multiple {
-            min-height: 42px !important;
-        }
     </style>
 </head>
-
 <body class="hold-transition light-skin sidebar-mini theme-primary fixed">
 
 <div class="wrapper">
@@ -48,161 +61,330 @@
                 <div class="d-flex align-items-center">
                     <div class="me-auto">
                         <h4 class="page-title">Editar Fluxo de Aprovação</h4>
-                        <div class="breadcrumb">
-                            <a href="/dashboard">Dashboard</a> /
-                            Configuração / Aprovações
+                        <div class="d-inline-block align-items-center">
+                            <nav>
+                                <ol class="breadcrumb">
+                                    <li class="breadcrumb-item">
+                                        <a href="{{ url('/dashboard') }}">
+                                            <i class="mdi mdi-home-outline"></i>
+                                        </a>
+                                    </li>
+                                    <li class="breadcrumb-item">Configuração</li>
+                                    <li class="breadcrumb-item">Aprovações</li>
+                                    <li class="breadcrumb-item active" aria-current="page">Editar Fluxo</li>
+                                </ol>
+                            </nav>
                         </div>
                     </div>
                 </div>
             </div>
 
             <section class="content">
-
-                <form method="POST" action="{{ route('aprovacao.fluxo.update', $fluxo->id) }}">
+                <form action="{{ route('aprovacao.fluxo.update', $fluxo->id) }}" method="POST" id="form-fluxo">
                     @csrf
 
-                    <!-- DADOS -->
-                    <div class="box">
-                        <div class="box-header with-border">
-                            <h4 class="box-title">Dados do Fluxo</h4>
-                        </div>
-
-                        <div class="box-body">
-                            <div class="row">
-
-                                <div class="col-md-6">
-                                    <label>Nome do Fluxo *</label>
-                                    <input type="text" name="nome_fluxo" class="form-control"
-                                           value="{{ $fluxo->nome_fluxo }}" required>
+                    <div class="row">
+                        <div class="col-12">
+                            <div class="box">
+                                <div class="box-header with-border">
+                                    <h4 class="box-title">Dados do Fluxo</h4>
                                 </div>
+                                <div class="box-body">
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="form-group">
+                                                <label class="form-label">Nome do Fluxo *</label>
+                                                <input
+                                                    type="text"
+                                                    name="nome_fluxo"
+                                                    class="form-control"
+                                                    value="{{ old('nome_fluxo', $fluxo->nome_fluxo) }}"
+                                                    required
+                                                >
+                                            </div>
+                                        </div>
 
-                                <div class="col-md-6">
-                                    <label>Tipo Referência *</label>
-                                    <input type="text" name="tipo_referencia" class="form-control"
-                                           value="{{ $fluxo->tipo_referencia }}" required>
+                                        <div class="col-md-6">
+                                            <div class="form-group">
+                                                <label class="form-label">Tipo de Referência *</label>
+                                                <input
+                                                    type="text"
+                                                    name="tipo_referencia"
+                                                    class="form-control"
+                                                    placeholder="Ex.: cargo, filial, colaborador"
+                                                    value="{{ old('tipo_referencia', $fluxo->tipo_referencia) }}"
+                                                    required
+                                                >
+                                            </div>
+                                        </div>
+
+                                        <div class="col-md-12">
+                                            <div class="form-group">
+                                                <label class="form-label">Descrição</label>
+                                                <textarea
+                                                    name="descricao"
+                                                    class="form-control"
+                                                    rows="3"
+                                                >{{ old('descricao', $fluxo->descricao) }}</textarea>
+                                            </div>
+                                        </div>
+
+                                        <div class="col-md-3">
+                                            <div class="form-group">
+                                                <label class="form-label">Modo de Aprovação *</label>
+                                                <select name="modo_aprovacao" class="form-select" required>
+                                                    <option value="sequencial" {{ old('modo_aprovacao', $fluxo->modo_aprovacao) === 'sequencial' ? 'selected' : '' }}>Sequencial</option>
+                                                    <option value="paralelo" {{ old('modo_aprovacao', $fluxo->modo_aprovacao) === 'paralelo' ? 'selected' : '' }}>Paralelo</option>
+                                                </select>
+                                            </div>
+                                        </div>
+
+                                        <div class="col-md-3">
+                                            <div class="form-group">
+                                                <label class="form-label">Permite Reprovação *</label>
+                                                <select name="permite_reprovacao" class="form-select" required>
+                                                    <option value="1" {{ (string) old('permite_reprovacao', $fluxo->permite_reprovacao ? '1' : '0') === '1' ? 'selected' : '' }}>Sim</option>
+                                                    <option value="0" {{ (string) old('permite_reprovacao', $fluxo->permite_reprovacao ? '1' : '0') === '0' ? 'selected' : '' }}>Não</option>
+                                                </select>
+                                            </div>
+                                        </div>
+
+                                        <div class="col-md-3">
+                                            <div class="form-group">
+                                                <label class="form-label">Permite Retorno *</label>
+                                                <select name="permite_retorno" class="form-select" required>
+                                                    <option value="1" {{ (string) old('permite_retorno', $fluxo->permite_retorno ? '1' : '0') === '1' ? 'selected' : '' }}>Sim</option>
+                                                    <option value="0" {{ (string) old('permite_retorno', $fluxo->permite_retorno ? '1' : '0') === '0' ? 'selected' : '' }}>Não</option>
+                                                </select>
+                                            </div>
+                                        </div>
+
+                                        <div class="col-md-3">
+                                            <div class="form-group">
+                                                <label class="form-label">Situação *</label>
+                                                <select name="situacao" class="form-select" required>
+                                                    <option value="ativo" {{ old('situacao', $fluxo->situacao) === 'ativo' ? 'selected' : '' }}>Ativo</option>
+                                                    <option value="inativo" {{ old('situacao', $fluxo->situacao) === 'inativo' ? 'selected' : '' }}>Inativo</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
-
-                                <div class="col-md-12">
-                                    <label>Descrição</label>
-                                    <textarea name="descricao" class="form-control">{{ $fluxo->descricao }}</textarea>
-                                </div>
-
-                                <div class="col-md-3">
-                                    <label>Modo</label>
-                                    <select name="modo_aprovacao" class="form-control">
-                                        <option value="sequencial" {{ $fluxo->modo_aprovacao=='sequencial'?'selected':'' }}>Sequencial</option>
-                                        <option value="paralelo" {{ $fluxo->modo_aprovacao=='paralelo'?'selected':'' }}>Paralelo</option>
-                                    </select>
-                                </div>
-
-                                <div class="col-md-3">
-                                    <label>Permite Reprovação</label>
-                                    <select name="permite_reprovacao" class="form-control">
-                                        <option value="1" {{ $fluxo->permite_reprovacao ? 'selected' : '' }}>Sim</option>
-                                        <option value="0" {{ !$fluxo->permite_reprovacao ? 'selected' : '' }}>Não</option>
-                                    </select>
-                                </div>
-
-                                <div class="col-md-3">
-                                    <label>Permite Retorno</label>
-                                    <select name="permite_retorno" class="form-control">
-                                        <option value="1" {{ $fluxo->permite_retorno ? 'selected' : '' }}>Sim</option>
-                                        <option value="0" {{ !$fluxo->permite_retorno ? 'selected' : '' }}>Não</option>
-                                    </select>
-                                </div>
-
-                                <div class="col-md-3">
-                                    <label>Situação</label>
-                                    <select name="situacao" class="form-control">
-                                        <option value="ativo" {{ $fluxo->situacao=='ativo'?'selected':'' }}>Ativo</option>
-                                        <option value="inativo" {{ $fluxo->situacao=='inativo'?'selected':'' }}>Inativo</option>
-                                    </select>
-                                </div>
-
                             </div>
                         </div>
                     </div>
 
-                    <!-- ETAPAS -->
-                    <div class="box">
-                        <div class="box-header with-border d-flex justify-content-between">
-                            <h4 class="box-title">Etapas</h4>
-                            <button type="button" id="btnAddEtapa" class="btn btn-info btn-sm">
-                                Adicionar Etapa
-                            </button>
-                        </div>
+                    @php
+                        $etapasOld = old('etapas');
+                    @endphp
 
-                        <div class="box-body" id="etapasContainer">
+                    <div class="row">
+                        <div class="col-12">
+                            <div class="box">
+                                <div class="box-header with-border d-flex justify-content-between align-items-center">
+                                    <h4 class="box-title mb-0">Etapas</h4>
+                                    <button type="button" id="btn-adicionar-etapa" class="btn btn-info btn-sm">
+                                        Adicionar Etapa
+                                    </button>
+                                </div>
 
-                            @foreach($fluxo->etapas as $i => $etapa)
-                                <div class="etapa-card">
-                                    <div class="row">
+                                <div class="box-body">
+                                    <div id="etapas-container">
+                                        @if(is_array($etapasOld) && count($etapasOld) > 0)
+                                            @foreach($etapasOld as $i => $etapaOld)
+                                                <div class="etapa-item etapa-card" data-index="{{ $i }}">
+                                                    <div class="row">
+                                                        <div class="col-12 d-flex justify-content-between align-items-center mb-15">
+                                                            <h5 class="mb-0 titulo-etapa">Etapa {{ $loop->iteration }}</h5>
+                                                            <button type="button" class="btn btn-danger btn-sm remover-etapa" {{ count($etapasOld) <= 1 ? 'style=display:none;' : '' }}>
+                                                                Remover
+                                                            </button>
+                                                        </div>
 
-                                        <div class="col-md-4">
-                                            <label>Nome Etapa</label>
-                                            <input type="text"
-                                                   name="etapas[{{ $i }}][nome_etapa]"
-                                                   value="{{ $etapa->nome_etapa }}"
-                                                   class="form-control">
-                                        </div>
+                                                        <div class="col-md-4">
+                                                            <div class="form-group">
+                                                                <label class="form-label">Nome da Etapa *</label>
+                                                                <input
+                                                                    type="text"
+                                                                    name="etapas[{{ $i }}][nome_etapa]"
+                                                                    class="form-control"
+                                                                    value="{{ $etapaOld['nome_etapa'] ?? '' }}"
+                                                                    required
+                                                                >
+                                                            </div>
+                                                        </div>
 
-                                        <div class="col-md-2">
-                                            <label>Ordem</label>
-                                            <input type="number"
-                                                   name="etapas[{{ $i }}][ordem]"
-                                                   value="{{ $etapa->ordem }}"
-                                                   class="form-control">
-                                        </div>
+                                                        <div class="col-md-2">
+                                                            <div class="form-group">
+                                                                <label class="form-label">Ordem *</label>
+                                                                <input
+                                                                    type="number"
+                                                                    name="etapas[{{ $i }}][ordem]"
+                                                                    class="form-control ordem-etapa"
+                                                                    value="{{ $etapaOld['ordem'] ?? ($loop->iteration) }}"
+                                                                    min="1"
+                                                                    required
+                                                                >
+                                                            </div>
+                                                        </div>
 
-                                        <div class="col-md-3">
-                                            <label>Tipo</label>
-                                            <select name="etapas[{{ $i }}][tipo_aprovacao_etapa]" class="form-control">
-                                                <option value="unanimidade" {{ $etapa->tipo_aprovacao_etapa=='unanimidade'?'selected':'' }}>Unanimidade</option>
-                                                <option value="qualquer_um" {{ $etapa->tipo_aprovacao_etapa=='qualquer_um'?'selected':'' }}>Qualquer</option>
-                                                <option value="maioria" {{ $etapa->tipo_aprovacao_etapa=='maioria'?'selected':'' }}>Maioria</option>
-                                            </select>
-                                        </div>
+                                                        <div class="col-md-3">
+                                                            <div class="form-group">
+                                                                <label class="form-label">Tipo de Aprovação *</label>
+                                                                <select
+                                                                    name="etapas[{{ $i }}][tipo_aprovacao_etapa]"
+                                                                    class="form-select tipo-aprovacao-etapa"
+                                                                    required
+                                                                >
+                                                                    <option value="unanimidade" {{ ($etapaOld['tipo_aprovacao_etapa'] ?? '') === 'unanimidade' ? 'selected' : '' }}>Unanimidade</option>
+                                                                    <option value="qualquer_um" {{ ($etapaOld['tipo_aprovacao_etapa'] ?? '') === 'qualquer_um' ? 'selected' : '' }}>Qualquer um</option>
+                                                                    <option value="maioria" {{ ($etapaOld['tipo_aprovacao_etapa'] ?? '') === 'maioria' ? 'selected' : '' }}>Maioria</option>
+                                                                </select>
+                                                            </div>
+                                                        </div>
 
-                                        <div class="col-md-3">
-                                            <label>Qtd Mínima</label>
-                                            <input type="number"
-                                                   name="etapas[{{ $i }}][quantidade_minima_aprovacao]"
-                                                   value="{{ $etapa->quantidade_minima_aprovacao }}"
-                                                   class="form-control">
-                                        </div>
+                                                        <div class="col-md-3 campo-quantidade-minima" {{ ($etapaOld['tipo_aprovacao_etapa'] ?? '') === 'maioria' ? '' : 'style=display:none;' }}>
+                                                            <div class="form-group">
+                                                                <label class="form-label">Qtd. Mínima Aprovação</label>
+                                                                <input
+                                                                    type="number"
+                                                                    name="etapas[{{ $i }}][quantidade_minima_aprovacao]"
+                                                                    class="form-control"
+                                                                    min="1"
+                                                                    value="{{ $etapaOld['quantidade_minima_aprovacao'] ?? '' }}"
+                                                                >
+                                                            </div>
+                                                        </div>
 
-                                        <div class="col-md-12">
-                                            <label>Aprovadores</label>
+                                                        <div class="col-md-12">
+                                                            <div class="form-group">
+                                                                <label class="form-label">Aprovadores *</label>
+                                                                <select
+                                                                    name="etapas[{{ $i }}][aprovadores][]"
+                                                                    class="form-select select-aprovadores"
+                                                                    multiple
+                                                                    required
+                                                                    data-placeholder="Selecione os aprovadores"
+                                                                >
+                                                                    @foreach($colaboradores as $colaborador)
+                                                                        <option value="{{ $colaborador->id }}"
+                                                                            {{ in_array($colaborador->id, $etapaOld['aprovadores'] ?? []) ? 'selected' : '' }}>
+                                                                            {{ $colaborador->nome_completo }}
+                                                                        </option>
+                                                                    @endforeach
+                                                                </select>
+                                                                <small class="text-muted">Pesquise e selecione um ou mais aprovadores.</small>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            @endforeach
+                                        @else
+                                            @foreach($fluxo->etapas as $i => $etapa)
+                                                <div class="etapa-item etapa-card" data-index="{{ $i }}">
+                                                    <div class="row">
+                                                        <div class="col-12 d-flex justify-content-between align-items-center mb-15">
+                                                            <h5 class="mb-0 titulo-etapa">Etapa {{ $loop->iteration }}</h5>
+                                                            <button type="button" class="btn btn-danger btn-sm remover-etapa" {{ $fluxo->etapas->count() <= 1 ? 'style=display:none;' : '' }}>
+                                                                Remover
+                                                            </button>
+                                                        </div>
 
-                                            <select name="etapas[{{ $i }}][aprovadores][]"
-                                                    class="form-control select-aprovadores"
-                                                    multiple>
+                                                        <div class="col-md-4">
+                                                            <div class="form-group">
+                                                                <label class="form-label">Nome da Etapa *</label>
+                                                                <input
+                                                                    type="text"
+                                                                    name="etapas[{{ $i }}][nome_etapa]"
+                                                                    class="form-control"
+                                                                    value="{{ $etapa->nome_etapa }}"
+                                                                    required
+                                                                >
+                                                            </div>
+                                                        </div>
 
-                                                @foreach($colaboradores as $colaborador)
-                                                    <option value="{{ $colaborador->id }}"
-                                                        {{ $etapa->aprovadores->pluck('colaborador_id')->contains($colaborador->id) ? 'selected' : '' }}>
-                                                        {{ $colaborador->nome_completo }}
-                                                    </option>
-                                                @endforeach
+                                                        <div class="col-md-2">
+                                                            <div class="form-group">
+                                                                <label class="form-label">Ordem *</label>
+                                                                <input
+                                                                    type="number"
+                                                                    name="etapas[{{ $i }}][ordem]"
+                                                                    class="form-control ordem-etapa"
+                                                                    value="{{ $etapa->ordem }}"
+                                                                    min="1"
+                                                                    required
+                                                                >
+                                                            </div>
+                                                        </div>
 
-                                            </select>
-                                        </div>
+                                                        <div class="col-md-3">
+                                                            <div class="form-group">
+                                                                <label class="form-label">Tipo de Aprovação *</label>
+                                                                <select
+                                                                    name="etapas[{{ $i }}][tipo_aprovacao_etapa]"
+                                                                    class="form-select tipo-aprovacao-etapa"
+                                                                    required
+                                                                >
+                                                                    <option value="unanimidade" {{ $etapa->tipo_aprovacao_etapa === 'unanimidade' ? 'selected' : '' }}>Unanimidade</option>
+                                                                    <option value="qualquer_um" {{ $etapa->tipo_aprovacao_etapa === 'qualquer_um' ? 'selected' : '' }}>Qualquer um</option>
+                                                                    <option value="maioria" {{ $etapa->tipo_aprovacao_etapa === 'maioria' ? 'selected' : '' }}>Maioria</option>
+                                                                </select>
+                                                            </div>
+                                                        </div>
 
+                                                        <div class="col-md-3 campo-quantidade-minima" {{ $etapa->tipo_aprovacao_etapa === 'maioria' ? '' : 'style=display:none;' }}>
+                                                            <div class="form-group">
+                                                                <label class="form-label">Qtd. Mínima Aprovação</label>
+                                                                <input
+                                                                    type="number"
+                                                                    name="etapas[{{ $i }}][quantidade_minima_aprovacao]"
+                                                                    class="form-control"
+                                                                    min="1"
+                                                                    value="{{ $etapa->quantidade_minima_aprovacao }}"
+                                                                >
+                                                            </div>
+                                                        </div>
+
+                                                        <div class="col-md-12">
+                                                            <div class="form-group">
+                                                                <label class="form-label">Aprovadores *</label>
+                                                                <select
+                                                                    name="etapas[{{ $i }}][aprovadores][]"
+                                                                    class="form-select select-aprovadores"
+                                                                    multiple
+                                                                    required
+                                                                    data-placeholder="Selecione os aprovadores"
+                                                                >
+                                                                    @php
+                                                                        $idsSelecionados = $etapa->aprovadores->pluck('colaborador_id')->toArray();
+                                                                    @endphp
+
+                                                                    @foreach($colaboradores as $colaborador)
+                                                                        <option value="{{ $colaborador->id }}"
+                                                                            {{ in_array($colaborador->id, $idsSelecionados) ? 'selected' : '' }}>
+                                                                            {{ $colaborador->nome_completo }}
+                                                                        </option>
+                                                                    @endforeach
+                                                                </select>
+                                                                <small class="text-muted">Pesquise e selecione um ou mais aprovadores.</small>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            @endforeach
+                                        @endif
                                     </div>
                                 </div>
-                            @endforeach
 
-                        </div>
-
-                        <div class="box-footer text-end">
-                            <button class="btn btn-success">
-                                Salvar Fluxo
-                            </button>
+                                <div class="box-footer text-end">
+                                    <button type="submit" class="waves-effect waves-light btn bg-gradient-success">
+                                        Salvar Fluxo
+                                    </button>
+                                </div>
+                            </div>
                         </div>
                     </div>
-
                 </form>
-
             </section>
         </div>
     </div>
@@ -211,66 +393,194 @@
 </div>
 
 <script src="{{ asset('assets/js/vendors.min.js') }}"></script>
+<script src="{{ asset('assets/js/pages/chat-popup.js') }}"></script>
+<script src="{{ asset('assets/icons/feather-icons/feather.min.js') }}"></script>
+<script src="{{ asset('assets/vendor_components/sweetalert/sweetalert.min.js') }}"></script>
+<script src="{{ asset('assets/vendor_components/sweetalert/jquery.sweet-alert.custom.js') }}"></script>
+<script src="{{ asset('assets/js/template.js') }}"></script>
 <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 
+@if(session('success'))
+    <script>
+        toastr.success(@json(session('success')));
+    </script>
+@endif
+
+@if(session('error'))
+    <script>
+        toastr.error(@json(session('error')));
+    </script>
+@endif
+
+@if ($errors->any())
+    <script>
+        @foreach ($errors->all() as $error)
+            toastr.error(@json($error));
+        @endforeach
+    </script>
+@endif
+
 <script>
-    function initSelect2() {
-        $('.select-aprovadores').select2({
-            width: '100%',
-            placeholder: 'Selecione',
-            closeOnSelect: false
-        });
-    }
+    let etapaIndex = {{ is_array($etapasOld) ? count($etapasOld) : $fluxo->etapas->count() }};
 
-    initSelect2();
-
-    $('#btnAddEtapa').click(function () {
-        let index = $('#etapasContainer .etapa-card').length;
-
-        let options = `
+    function getColaboradoresOptions() {
+        return `
             @foreach($colaboradores as $colaborador)
                 <option value="{{ $colaborador->id }}">{{ $colaborador->nome_completo }}</option>
             @endforeach
         `;
+    }
 
-        let html = `
-            <div class="etapa-card">
+    function inicializarSelectBusca(context) {
+        context.find('.select-aprovadores').each(function() {
+            if ($(this).hasClass('select2-hidden-accessible')) {
+                return;
+            }
+
+            $(this).select2({
+                theme: 'bootstrap-5',
+                width: '100%',
+                placeholder: $(this).data('placeholder') || 'Selecione',
+                closeOnSelect: false,
+                allowClear: false
+            });
+        });
+    }
+
+    function atualizarTitulosEtapas() {
+        $('.etapa-item').each(function(index) {
+            $(this).find('.titulo-etapa').text('Etapa ' + (index + 1));
+            $(this).find('.ordem-etapa').val(index + 1);
+            $(this).find('.remover-etapa').toggle($('.etapa-item').length > 1);
+        });
+    }
+
+    function bindEventosEtapa(context) {
+        context.find('.tipo-aprovacao-etapa').off('change').on('change', function() {
+            const etapa = $(this).closest('.etapa-item');
+            const valor = $(this).val();
+
+            if (valor === 'maioria') {
+                etapa.find('.campo-quantidade-minima').show();
+            } else {
+                etapa.find('.campo-quantidade-minima').hide();
+                etapa.find('input[name*="[quantidade_minima_aprovacao]"]').val('');
+            }
+        });
+
+        context.find('.remover-etapa').off('click').on('click', function() {
+            const etapa = $(this).closest('.etapa-item');
+            const select = etapa.find('.select-aprovadores');
+
+            if (select.hasClass('select2-hidden-accessible')) {
+                select.select2('destroy');
+            }
+
+            etapa.remove();
+            atualizarTitulosEtapas();
+        });
+    }
+
+    $('#btn-adicionar-etapa').on('click', function() {
+        const html = `
+            <div class="etapa-item etapa-card" data-index="${etapaIndex}">
                 <div class="row">
+                    <div class="col-12 d-flex justify-content-between align-items-center mb-15">
+                        <h5 class="mb-0 titulo-etapa">Etapa</h5>
+                        <button type="button" class="btn btn-danger btn-sm remover-etapa">
+                            Remover
+                        </button>
+                    </div>
 
                     <div class="col-md-4">
-                        <input type="text" name="etapas[${index}][nome_etapa]" class="form-control">
+                        <div class="form-group">
+                            <label class="form-label">Nome da Etapa *</label>
+                            <input
+                                type="text"
+                                name="etapas[${etapaIndex}][nome_etapa]"
+                                class="form-control"
+                                required
+                            >
+                        </div>
                     </div>
 
                     <div class="col-md-2">
-                        <input type="number" name="etapas[${index}][ordem]" class="form-control">
+                        <div class="form-group">
+                            <label class="form-label">Ordem *</label>
+                            <input
+                                type="number"
+                                name="etapas[${etapaIndex}][ordem]"
+                                class="form-control ordem-etapa"
+                                value="${etapaIndex + 1}"
+                                min="1"
+                                required
+                            >
+                        </div>
                     </div>
 
                     <div class="col-md-3">
-                        <select name="etapas[${index}][tipo_aprovacao_etapa]" class="form-control">
-                            <option value="unanimidade">Unanimidade</option>
-                            <option value="qualquer_um">Qualquer</option>
-                            <option value="maioria">Maioria</option>
-                        </select>
+                        <div class="form-group">
+                            <label class="form-label">Tipo de Aprovação *</label>
+                            <select
+                                name="etapas[${etapaIndex}][tipo_aprovacao_etapa]"
+                                class="form-select tipo-aprovacao-etapa"
+                                required
+                            >
+                                <option value="unanimidade">Unanimidade</option>
+                                <option value="qualquer_um">Qualquer um</option>
+                                <option value="maioria">Maioria</option>
+                            </select>
+                        </div>
                     </div>
 
-                    <div class="col-md-3">
-                        <input type="number" name="etapas[${index}][quantidade_minima_aprovacao]" class="form-control">
+                    <div class="col-md-3 campo-quantidade-minima" style="display:none;">
+                        <div class="form-group">
+                            <label class="form-label">Qtd. Mínima Aprovação</label>
+                            <input
+                                type="number"
+                                name="etapas[${etapaIndex}][quantidade_minima_aprovacao]"
+                                class="form-control"
+                                min="1"
+                            >
+                        </div>
                     </div>
 
                     <div class="col-md-12">
-                        <select name="etapas[${index}][aprovadores][]"
-                                class="form-control select-aprovadores"
-                                multiple>
-                            ${options}
-                        </select>
+                        <div class="form-group">
+                            <label class="form-label">Aprovadores *</label>
+                            <select
+                                name="etapas[${etapaIndex}][aprovadores][]"
+                                class="form-select select-aprovadores"
+                                multiple
+                                required
+                                data-placeholder="Selecione os aprovadores"
+                            >
+                                ${getColaboradoresOptions()}
+                            </select>
+                            <small class="text-muted">
+                                Pesquise e selecione um ou mais aprovadores.
+                            </small>
+                        </div>
                     </div>
-
                 </div>
             </div>
         `;
 
-        $('#etapasContainer').append(html);
-        initSelect2();
+        $('#etapas-container').append(html);
+
+        const novaEtapa = $('#etapas-container .etapa-item').last();
+
+        bindEventosEtapa(novaEtapa);
+        inicializarSelectBusca(novaEtapa);
+        atualizarTitulosEtapas();
+
+        etapaIndex++;
+    });
+
+    $(document).ready(function() {
+        bindEventosEtapa($(document));
+        inicializarSelectBusca($(document));
+        atualizarTitulosEtapas();
     });
 </script>
 
