@@ -16,6 +16,7 @@
 
     <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
     <link href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css">
 
     <style>
         .etapa-card {
@@ -399,6 +400,7 @@
 <script src="{{ asset('assets/vendor_components/sweetalert/jquery.sweet-alert.custom.js') }}"></script>
 <script src="{{ asset('assets/js/template.js') }}"></script>
 <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
 
 @if(session('success'))
     <script>
@@ -583,6 +585,34 @@
         atualizarTitulosEtapas();
     });
 </script>
+<script>
+    toastr.options = {
+        "closeButton": true,
+        "progressBar": true,
+        "positionClass": "toast-top-right",
+        "timeOut": "4000"
+    };
+</script>
+
+@if(session('success'))
+<script>
+    toastr.success(@json(session('success')));
+</script>
+@endif
+
+@if(session('error'))
+<script>
+    toastr.error(@json(session('error')));
+</script>
+@endif
+
+@if ($errors->any())
+<script>
+    @foreach ($errors->all() as $error)
+        toastr.error(@json($error));
+    @endforeach
+</script>
+@endif
 
 </body>
 </html>
