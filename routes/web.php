@@ -75,12 +75,14 @@ Route::middleware(['auth', 'user.active'])->group(function () {
         Route::post('/empresa/setor/update/{id}', [SetorController::class, 'update'])->name('empresa.setor.update');
         Route::delete('/empresa/setor/delete/{id}', [SetorController::class, 'delete'])->name('empresa.setor.delete');
     });
-    Route::prefix('configuracao/aprovacao')
+   Route::prefix('configuracao/aprovacao')
     ->name('aprovacao.fluxo.')
     ->middleware('screen:configuracao/aprovacao')
     ->group(function () {
         Route::get('/', [FluxoAprovacaoController::class, 'index'])->name('index');
         Route::get('/create', [FluxoAprovacaoController::class, 'create'])->name('create');
         Route::post('/store', [FluxoAprovacaoController::class, 'store'])->name('store');
+        Route::get('/edit/{id}', [FluxoAprovacaoController::class, 'edit'])->name('edit');
+        Route::post('/update/{id}', [FluxoAprovacaoController::class, 'update'])->name('update');
     });
 });
