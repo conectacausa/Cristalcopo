@@ -11,17 +11,23 @@ use Illuminate\Support\Str;
 class FluxoAprovacaoController extends Controller
 {
     public function index(Request $request)
-{
-    $query = AprovacaoFluxo::query()->orderBy('id', 'desc');
+    {
+        $query = AprovacaoFluxo::query()->orderBy('id', 'desc');
 
-    if ($request->filled('descricao')) {
-        $query->where('nome_fluxo', 'ilike', '%' . $request->descricao . '%');
+        if ($request->filled('descricao')) {
+            $query->where('nome_fluxo', 'like', '%' . $request->descricao . '%');
+        }
+
+        $fluxos = $query->get();
+
+        if ($request->ajax()) {
+            return response()->json([
+                'html' => view('aprovacao.fluxo.partials.table', compact('fluxos'))->render(),
+            ]);
+        }
+
+        return view('aprovacao.fluxo.index', compact('fluxos'));
     }
-
-    $fluxos = $query->get();
-
-    return view('aprovacao.fluxo.index', compact('fluxos'));
-}
 
     public function create()
     {
@@ -50,9 +56,18 @@ class FluxoAprovacaoController extends Controller
             'etapas.*.aprovadores.*' => 'required|integer|exists:colaboradores,id',
         ]);
 
+        $slugBase = Str::slug($request->nome_fluxo);
+        $slug = $slugBase;
+        $contador = 2;
+
+        while (AprovacaoFluxo::where('slug', $slug)->exists()) {
+            $slug = $slugBase . '-' . $contador;
+            $contador++;
+        }
+
         $fluxo = AprovacaoFluxo::create([
             'nome_fluxo' => $request->nome_fluxo,
-            'slug' => Str::slug($request->nome_fluxo),
+            'slug' => $slug,
             'descricao' => $request->descricao,
             'tipo_referencia' => $request->tipo_referencia,
             'modo_aprovacao' => $request->modo_aprovacao,
