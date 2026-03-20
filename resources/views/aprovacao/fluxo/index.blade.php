@@ -60,34 +60,20 @@
                                 <h4 class="box-title">Filtros</h4>
                             </div>
                             <div class="box-body">
-                                <form method="GET" action="{{ route('aprovacao.fluxo.index') }}">
-                                    <div class="row">
-                                        <div class="col-md-12">
-                                            <div class="form-group">
-                                                <label class="form-label">Descrição</label>
-                                                <input
-                                                    type="text"
-                                                    name="descricao"
-                                                    class="form-control"
-                                                    placeholder="Descrição"
-                                                    value="{{ request('descricao') }}"
-                                                >
-                                            </div>
+                                <div class="row">
+                                    <div class="col-md-12">
+                                        <div class="form-group">
+                                            <label class="form-label">Descrição</label>
+                                            <input
+                                                type="text"
+                                                id="filtro-descricao"
+                                                class="form-control"
+                                                placeholder="Descrição"
+                                                value="{{ request('descricao') }}"
+                                            >
                                         </div>
                                     </div>
-
-                                    <div class="row mt-10">
-                                        <div class="col-12">
-                                            <button type="submit" class="btn btn-primary">
-                                                Filtrar
-                                            </button>
-
-                                            <a href="{{ route('aprovacao.fluxo.index') }}" class="btn btn-secondary">
-                                                Limpar
-                                            </a>
-                                        </div>
-                                    </div>
-                                </form>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -100,53 +86,9 @@
                                 <h4 class="box-title">Fluxo de Aprovação</h4>
                             </div>
                             <div class="box-body">
-                                <div class="table-responsive">
-                                    <table class="table">
-                                        <thead class="bg-primary">
-                                            <tr align="center">
-                                                <th>Nome Fluxo</th>
-                                                <th>Referência</th>
-                                                <th>Modo</th>
-                                                <th width="200">Ações</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            @forelse($fluxos as $fluxo)
-                                                <tr>
-                                                    <td>{{ $fluxo->nome_fluxo }}</td>
-                                                    <td>{{ ucfirst($fluxo->tipo_referencia) }}</td>
-                                                    <td>{{ ucfirst($fluxo->modo_aprovacao) }}</td>
-                                                    <td align="center">
-                                                        <div class="clearfix">
-                                                            <a href="javascript:void(0)"
-                                                               class="waves-effect waves-light btn mb-5 bg-gradient-primary">
-                                                                <i class="fa fa-edit"></i>
-                                                            </a>
-
-                                                            <button type="button"
-                                                                    class="waves-effect waves-light btn mb-5 bg-gradient-danger"
-                                                                    disabled>
-                                                                <i class="fa fa-trash-o"></i>
-                                                            </button>
-                                                        </div>
-                                                    </td>
-                                                </tr>
-                                            @empty
-                                                <tr>
-                                                    <td colspan="4" class="text-center">
-                                                        Nenhum fluxo de aprovação cadastrado.
-                                                    </td>
-                                                </tr>
-                                            @endforelse
-                                        </tbody>
-                                    </table>
+                                <div id="fluxos-table-wrapper">
+                                    @include('aprovacao.fluxo.partials.table', ['fluxos' => $fluxos])
                                 </div>
-
-                                @if(method_exists($fluxos, 'links'))
-                                    <div class="mt-3">
-                                        {{ $fluxos->links() }}
-                                    </div>
-                                @endif
                             </div>
                         </div>
                     </div>
@@ -189,6 +131,36 @@
         toastr.info(@json(session('info')));
     </script>
 @endif
+
+<script>
+    let filtroTimeout = null;
+
+    function carregarFluxos() {
+        const descricao = document.getElementById('filtro-descricao').value;
+
+        $.ajax({
+            url: "{{ route('aprovacao.fluxo.index') }}",
+            type: "GET",
+            data: {
+                descricao: descricao
+            },
+            success: function(response) {
+                $('#fluxos-table-wrapper').html(response.html);
+            },
+            error: function() {
+                toastr.error('Erro ao carregar os fluxos.');
+            }
+        });
+    }
+
+    $('#filtro-descricao').on('keyup', function() {
+        clearTimeout(filtroTimeout);
+
+        filtroTimeout = setTimeout(function() {
+            carregarFluxos();
+        }, 300);
+    });
+</script>
 
 </body>
 </html>
