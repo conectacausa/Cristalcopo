@@ -12,11 +12,12 @@ class TesteAprovacaoController extends Controller
     {
         try {
             $dados = [
-                'fluxo_id'                    => $request->input('fluxo_id'),
-                'tipo_referencia'             => $request->input('tipo_referencia'),
-                'referencia_id'               => $request->input('referencia_id'),
-                'titulo'                      => $request->input('titulo'),
-                'descricao'                   => $request->input('descricao'),
+                // valores padrão para facilitar teste via navegador
+                'fluxo_id'                    => $request->input('fluxo_id', 1),
+                'tipo_referencia'             => $request->input('tipo_referencia', 'cargo'),
+                'referencia_id'               => $request->input('referencia_id', rand(100, 999)),
+                'titulo'                      => $request->input('titulo', 'Teste de aprovação'),
+                'descricao'                   => $request->input('descricao', 'Teste via navegador'),
                 'solicitante_colaborador_id'  => auth()->id(),
             ];
 
@@ -38,6 +39,8 @@ class TesteAprovacaoController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => $e->getMessage(),
+                'line'    => $e->getLine(),
+                'file'    => $e->getFile(),
             ], 500);
         }
     }
