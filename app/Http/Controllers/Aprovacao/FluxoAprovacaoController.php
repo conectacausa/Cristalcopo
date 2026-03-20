@@ -10,12 +10,18 @@ use Illuminate\Support\Str;
 
 class FluxoAprovacaoController extends Controller
 {
-    public function index()
-    {
-        $fluxos = AprovacaoFluxo::orderBy('id', 'desc')->get();
+    public function index(Request $request)
+{
+    $query = AprovacaoFluxo::query()->orderBy('id', 'desc');
 
-        return view('aprovacao.fluxo.index', compact('fluxos'));
+    if ($request->filled('descricao')) {
+        $query->where('nome_fluxo', 'ilike', '%' . $request->descricao . '%');
     }
+
+    $fluxos = $query->get();
+
+    return view('aprovacao.fluxo.index', compact('fluxos'));
+}
 
     public function create()
     {
