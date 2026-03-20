@@ -17,7 +17,6 @@ class FluxoAprovacaoController extends Controller
 
         if ($request->filled('descricao')) {
             $busca = trim($request->descricao);
-
             $palavras = preg_split('/\s+/', $busca);
 
             $query->where(function ($q) use ($palavras) {
@@ -189,10 +188,10 @@ class FluxoAprovacaoController extends Controller
             ]);
 
             foreach ($fluxo->etapas as $etapa) {
-                $etapa->aprovadores()->delete();
+                $etapa->aprovadores()->forceDelete();
             }
 
-            $fluxo->etapas()->delete();
+            $fluxo->etapas()->forceDelete();
 
             foreach ($request->etapas as $etapaData) {
                 $etapa = $fluxo->etapas()->create([
