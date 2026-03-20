@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\AprovacaoFluxo;
 use App\Models\Colaborador;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 class FluxoAprovacaoController extends Controller
@@ -71,48 +72,158 @@ class FluxoAprovacaoController extends Controller
             'etapas.*.aprovadores.*' => 'required|integer|exists:colaboradores,id',
         ]);
 
-        $slugBase = Str::slug($request->nome_fluxo);
-        $slug = $slugBase;
-        $contador = 2;
+        DB::beginTransaction();
 
-        while (AprovacaoFluxo::where('slug', $slug)->exists()) {
-            $slug = $slugBase . '-' . $contador;
-            $contador++;
-        }
+        try {
+            $slugBase = Str::slug($request->nome_fluxo);
+            $slug = $slugBase;
+            $contador = 2;
 
-        $fluxo = AprovacaoFluxo::create([
-            'nome_fluxo' => $request->nome_fluxo,
-            'slug' => $slug,
-            'descricao' => $request->descricao,
-            'tipo_referencia' => $request->tipo_referencia,
-            'modo_aprovacao' => $request->modo_aprovacao,
-            'permite_reprovacao' => $request->permite_reprovacao,
-            'permite_retorno' => $request->permite_retorno,
-            'situacao' => $request->situacao,
-            'created_by' => auth()->id(),
-            'updated_by' => auth()->id(),
-        ]);
+            while (AprovacaoFluxo::where('slug', $slug)->exists()) {
+                $slug = $slugBase . '-' . $contador;
+                $contador++;
+            }
 
-        foreach ($request->etapas as $etapaData) {
-            $etapa = $fluxo->etapas()->create([
-                'nome_etapa' => $etapaData['nome_etapa'],
-                'ordem' => $etapaData['ordem'],
-                'tipo_aprovacao_etapa' => $etapaData['tipo_aprovacao_etapa'],
-                'quantidade_minima_aprovacao' => $etapaData['quantidade_minima_aprovacao'] ?? null,
-                'situacao' => 'ativo',
+            $fluxo = AprovacaoFluxo::create([
+                'nome_fluxo' => $request->nome_fluxo,
+                'slug' => $slug,
+                'descricao' => $request->descricao,
+                'tipo_referencia' => $request->tipo_referencia,
+                'modo_aprovacao' => $request->modo_aprovacao,
+                'permite_reprovacao' => $request->permite_reprovacao,
+                'permite_retorno' => $request->permite_retorno,
+                'situacao' => $request->situacao,
+                'created_by' => auth()->id(),
+                'updated_by' => auth()->id(),
             ]);
 
-            foreach ($etapaData['aprovadores'] as $index => $colaboradorId) {
-                $etapa->aprovadores()->create([
-                    'colaborador_id' => $colaboradorId,
-                    'obrigatorio' => true,
-                    'ordem_interna' => $index + 1,
+            foreach ($request->etapas as $etapaData) {
+                $etapa = $fluxo->etapas()->create([
+                    'nome_etapa' => $etapaData['nome_etapa'],
+                    'ordem' => $etapaData['ordem'],
+                    'tipo_aprovacao_etapa' => $etapaData['tipo_aprovacao_etapa'],
+                    'quantidade_minima_aprovacao' => $etapaData['quantidade_minima_aprovacao'] ?? null,
+                    'situacao' => 'ativo',
                 ]);
-            }
-        }
 
-        return redirect()
-            ->route('aprovacao.fluxo.index')
-            ->with('success', 'Fluxo de aprovação cadastrado com sucesso.');
+                foreach ($etapaData['aprovadores'] as $index => $colaboradorId) {
+                    $etapa->aprovadores()->create([
+                        'colaborador_id' => $colaboradorId,
+                        'obrigatorio' => true,
+                        'ordem_interna' => $index + 1,
+                    ]);
+                }
+            }
+
+            DB::commit();
+
+            return redirect()
+                ->route('aprovacao.fluxo.index')
+                ->with('success', 'Fluxo de aprovação cadastrado com sucesso.');
+        } catch (\Throwable $e) {
+            DB::rollBack();
+
+            return redirect()
+                ->back()
+                ->withInput()
+                ->with('error', 'Erro ao cadastrar fluxo de aprovação: ' . $e->getMessage());
+        }
+    }
+
+    public function edit($id)
+    {
+        $fluxo = AprovacaoFluxo::with(['etapas.aprovadores'])->findOrFail($id);
+        $colaboradores = Colaborador::orderBy('nome_completo')->get();
+
+        return view('aprovacao.fluxo.edit', compact('fluxo', 'colaboradores'));
+    }
+
+    public function update(Request $request, $id)
+    {
+        $request->validate([
+            'nome_fluxo' => 'required|string|max:150',
+            'descricao' => 'nullable|string',
+            'tipo_referencia' => 'required|string|max:100',
+            'modo_aprovacao' => 'required|in:sequencial,paralelo',
+            'permite_reprovacao' => 'required|boolean',
+            'permite_retorno' => 'required|boolean',
+            'situacao' => 'required|in:ativo,inativo',
+
+            'etapas' => 'required|array|min:1',
+            'etapas.*.nome_etapa' => 'required|string|max:150',
+            'etapas.*.ordem' => 'required|integer|min:1',
+            'etapas.*.tipo_aprovacao_etapa' => 'required|in:unanimidade,qualquer_um,maioria',
+            'etapas.*.quantidade_minima_aprovacao' => 'nullable|integer|min:1',
+            'etapas.*.aprovadores' => 'required|array|min:1',
+            'etapas.*.aprovadores.*' => 'required|integer|exists:colaboradores,id',
+        ]);
+
+        DB::beginTransaction();
+
+        try {
+            $fluxo = AprovacaoFluxo::with(['etapas.aprovadores'])->findOrFail($id);
+
+            $slugBase = Str::slug($request->nome_fluxo);
+            $slug = $slugBase;
+            $contador = 2;
+
+            while (
+                AprovacaoFluxo::where('slug', $slug)
+                    ->where('id', '<>', $fluxo->id)
+                    ->exists()
+            ) {
+                $slug = $slugBase . '-' . $contador;
+                $contador++;
+            }
+
+            $fluxo->update([
+                'nome_fluxo' => $request->nome_fluxo,
+                'slug' => $slug,
+                'descricao' => $request->descricao,
+                'tipo_referencia' => $request->tipo_referencia,
+                'modo_aprovacao' => $request->modo_aprovacao,
+                'permite_reprovacao' => $request->permite_reprovacao,
+                'permite_retorno' => $request->permite_retorno,
+                'situacao' => $request->situacao,
+                'updated_by' => auth()->id(),
+            ]);
+
+            foreach ($fluxo->etapas as $etapa) {
+                $etapa->aprovadores()->delete();
+            }
+
+            $fluxo->etapas()->delete();
+
+            foreach ($request->etapas as $etapaData) {
+                $etapa = $fluxo->etapas()->create([
+                    'nome_etapa' => $etapaData['nome_etapa'],
+                    'ordem' => $etapaData['ordem'],
+                    'tipo_aprovacao_etapa' => $etapaData['tipo_aprovacao_etapa'],
+                    'quantidade_minima_aprovacao' => $etapaData['quantidade_minima_aprovacao'] ?? null,
+                    'situacao' => 'ativo',
+                ]);
+
+                foreach ($etapaData['aprovadores'] as $index => $colaboradorId) {
+                    $etapa->aprovadores()->create([
+                        'colaborador_id' => $colaboradorId,
+                        'obrigatorio' => true,
+                        'ordem_interna' => $index + 1,
+                    ]);
+                }
+            }
+
+            DB::commit();
+
+            return redirect()
+                ->route('aprovacao.fluxo.index')
+                ->with('success', 'Fluxo de aprovação atualizado com sucesso.');
+        } catch (\Throwable $e) {
+            DB::rollBack();
+
+            return redirect()
+                ->back()
+                ->withInput()
+                ->with('error', 'Erro ao atualizar fluxo de aprovação: ' . $e->getMessage());
+        }
     }
 }
