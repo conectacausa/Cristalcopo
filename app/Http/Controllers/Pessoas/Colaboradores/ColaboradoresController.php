@@ -3,12 +3,13 @@
 namespace App\Http\Controllers\Pessoas\Colaboradores;
 
 use App\Http\Controllers\Controller;
-use App\Models\Colaborador;
+use App\Models\Pessoas\Colaborador;
 use App\Models\EmpresaFilial;
 use App\Models\EmpresaSetor;
 use App\Models\Cargos\Cargo;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Http\JsonResponse;
 
 class ColaboradoresController extends Controller
 {
@@ -51,63 +52,60 @@ class ColaboradoresController extends Controller
             ->paginate(25)
             ->withQueryString();
 
-        $filiaisLista = EmpresaFilial::query()
-            ->where('situacao', true)
+        $filiaisLista = EmpresaFilial::where('situacao', true)
             ->orderBy('nome_fantasia')
             ->get();
 
-        $setoresLista = EmpresaSetor::query()
+        return view('pessoas.colaboradores.index', [
+            'colaboradores' => $query,
+            'filiaisLista' => $filiaisLista,
+            'permissao' => $permissao,
+            'filtros' => compact('texto', 'filiais', 'setores', 'cargos', 'situacao'),
+        ]);
+    }
+
+    public function getSetores(Request $request): JsonResponse
+    {
+        $filiais = array_filter((array) $request->get('filiais', []));
+
+        $setores = EmpresaSetor::query()
             ->when(!empty($filiais), function ($q) use ($filiais) {
                 $q->whereIn('id', function ($sub) use ($filiais) {
                     $sub->select('setor_id')
                         ->from('vinculo_filial_x_setor')
                         ->whereIn('filial_id', $filiais);
                 });
+            }, function ($q) {
+                $q->whereRaw('1 = 0');
             })
             ->orderBy('descricao')
-            ->get();
+            ->get(['id', 'descricao']);
 
-        $cargosLista = Cargo::query()
+        return response()->json($setores);
+    }
+
+    public function getCargos(Request $request): JsonResponse
+    {
+        $setores = array_filter((array) $request->get('setores', []));
+
+        $cargos = Cargo::query()
             ->when(!empty($setores), function ($q) use ($setores) {
                 $q->whereIn('id', function ($sub) use ($setores) {
                     $sub->select('cargo_id')
                         ->from('vinculo_cargo_x_setor')
                         ->whereIn('setor_id', $setores);
                 });
+            }, function ($q) {
+                $q->whereRaw('1 = 0');
             })
             ->orderBy('titulo_cargo')
-            ->get();
+            ->get(['id', 'titulo_cargo']);
 
-        if ($request->ajax()) {
-            return view('pessoas.colaboradores.partials.tabela', compact('query', 'permissao'))->render();
-        }
-
-        return view('pessoas.colaboradores.index', [
-            'colaboradores' => $query,
-            'filiaisLista' => $filiaisLista,
-            'setoresLista' => $setoresLista,
-            'cargosLista' => $cargosLista,
-            'permissao' => $permissao,
-            'filtros' => [
-                'texto' => $texto,
-                'filiais' => $filiais,
-                'setores' => $setores,
-                'cargos' => $cargos,
-                'situacao' => $situacao,
-            ],
-        ]);
+        return response()->json($cargos);
     }
 
     public function destroy(Colaborador $colaborador)
     {
-        $permissao = DB::table('vinculo_permissao_x_tela')
-            ->join('gestao_tela', 'gestao_tela.id', '=', 'vinculo_permissao_x_tela.tela_id')
-            ->where('gestao_tela.slug', 'pessoas/colaboradores')
-            ->where('vinculo_permissao_x_tela.permissao_id', auth()->user()->permissao_id)
-            ->first();
-
-        abort_unless($permissao && $permissao->pode_excluir, 403);
-
         $colaborador->delete();
 
         return redirect()
