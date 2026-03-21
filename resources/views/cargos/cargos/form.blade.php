@@ -36,10 +36,12 @@
                     </div>
                 </div>
 
-                <a href="{{ route('cargos.cargos.index') }}"
-                   class="waves-effect waves-light btn mb-5 bg-gradient-secondary">
-                    Voltar
-                </a>
+                @if($cargo)
+                    <a href="{{ route('cargos.cargos.index') }}"
+                       class="waves-effect waves-light btn mb-5 bg-gradient-secondary">
+                        Voltar
+                    </a>
+                @endif
             </div>
         </div>
 
@@ -171,10 +173,6 @@
                             </div>
 
                             <div class="box-footer text-end">
-                                <a href="{{ route('cargos.cargos.index') }}" class="btn btn-danger-light me-1">
-                                    Cancelar
-                                </a>
-
                                 <button type="submit" class="btn btn-success">
                                     {{ $cargo ? 'Atualizar' : 'Salvar' }}
                                 </button>
