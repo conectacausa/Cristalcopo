@@ -95,17 +95,19 @@ Route::middleware(['auth', 'user.active'])->group(function () {
         Route::get('/', [ConfiguracaoFluxoController::class, 'index'])->name('index');
         Route::post('/store', [ConfiguracaoFluxoController::class, 'store'])->name('store');
     });
-   Route::middleware(['auth', 'user.active', 'screen:cargos'])->group(function () {
-    Route::get('/cargos', [CargosController::class, 'index'])->name('cargos.cargos.index');
-    Route::get('/cargos/list', [CargosController::class, 'list'])->name('cargos.cargos.list');
-
-    Route::get('/cargos/create', [CargosController::class, 'create'])->name('cargos.cargos.create');
-    Route::post('/cargos/store', [CargosController::class, 'store'])->name('cargos.cargos.store');
-
-    Route::get('/cargos/edit/{id}', [CargosController::class, 'editPage'])->name('cargos.cargos.edit');
-    Route::post('/cargos/update/{id}', [CargosController::class, 'update'])->name('cargos.cargos.update');
-
-    Route::get('/cargos/show/{id}', [CargosController::class, 'show'])->name('cargos.cargos.show');
-    Route::delete('/cargos/delete/{id}', [CargosController::class, 'delete'])->name('cargos.cargos.delete');
-});
+    Route::middleware(['auth', 'user.active', 'screen:cargos'])->group(function () {
+        Route::get('/cargos', [CargosController::class, 'index'])->name('cargos.cargos.index');
+        Route::get('/cargos/list', [CargosController::class, 'list'])->name('cargos.cargos.list');
+    
+        Route::get('/cargos/create', [CargosController::class, 'create'])->name('cargos.cargos.create');
+        Route::post('/cargos/store', [CargosController::class, 'store'])->name('cargos.cargos.store');
+    
+        Route::get('/cargos/edit/{id}', [CargosController::class, 'editPage'])->name('cargos.cargos.edit');
+        Route::post('/cargos/update/{id}', [CargosController::class, 'update'])->name('cargos.cargos.update');
+    
+        Route::get('/cargos/show/{id}', [CargosController::class, 'show'])->name('cargos.cargos.show');
+        Route::get('/cargos/setores-por-filiais', [CargosController::class, 'setoresPorFiliais'])->name('cargos.cargos.setores_por_filiais');
+    
+        Route::delete('/cargos/delete/{id}', [CargosController::class, 'delete'])->name('cargos.cargos.delete');
+    });
 });
