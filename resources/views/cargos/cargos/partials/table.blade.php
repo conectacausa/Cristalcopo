@@ -1,0 +1,88 @@
+@php
+    $isPaginator = $dados instanceof \Illuminate\Contracts\Pagination\Paginator
+        || $dados instanceof \Illuminate\Contracts\Pagination\LengthAwarePaginator;
+@endphp
+
+<div class="table-responsive">
+    <table class="table">
+        <thead class="bg-primary">
+            <tr align="center">
+                <th align="left">Cargo</th>
+                <th align="left">Lotação / Setor</th>
+                <th>Situação</th>
+                <th width="220">Ações</th>
+            </tr>
+        </thead>
+        <tbody>
+            @if($isPaginator && $dados->count())
+                @foreach($dados as $cargo)
+                    <tr>
+                        <td>
+                            <strong>{{ $cargo->titulo_cargo }}</strong>
+                            <span class="cargo-cbo">
+                                {{ $cargo->cbo->codigo_cbo ?? '-' }}
+                                @if(!empty($cargo->cbo->descricao_cbo))
+                                    - {{ $cargo->cbo->descricao_cbo }}
+                                @endif
+                            </span>
+                        </td>
+
+                        <td>
+                            <div>
+                                <strong>Filiais:</strong>
+                                {{ $cargo->filiais->pluck('nome_fantasia')->implode(', ') ?: '-' }}
+                            </div>
+                            <div class="mt-5 text-muted">
+                                <strong>Setores:</strong>
+                                {{ $cargo->setores->pluck('descricao')->implode(', ') ?: '-' }}
+                            </div>
+                        </td>
+
+                        <td align="center">
+                            <span class="{{ $cargo->status_badge_class }}">
+                                {{ $cargo->status_formatado }}
+                            </span>
+                        </td>
+
+                        <td align="center">
+                            <div class="clearfix">
+                                <button type="button"
+                                        class="waves-effect waves-light btn mb-5 bg-gradient-info"
+                                        title="Baixar">
+                                    <i class="fa fa-download"></i>
+                                </button>
+
+                                @if($permissoes['pode_editar'])
+                                    <button type="button"
+                                            class="waves-effect waves-light btn mb-5 bg-gradient-primary"
+                                            title="Editar">
+                                        <i class="fa fa-edit"></i>
+                                    </button>
+                                @endif
+
+                                @if($permissoes['pode_excluir'])
+                                    <button type="button"
+                                            class="waves-effect waves-light btn mb-5 bg-gradient-danger btn-excluir-cargo"
+                                            data-url="{{ route('cargos.cargos.delete', $cargo->id) }}"
+                                            title="Excluir">
+                                        <i class="fa fa-trash-o"></i>
+                                    </button>
+                                @endif
+                            </div>
+                        </td>
+                    </tr>
+                @endforeach
+            @else
+                <tr>
+                    <td colspan="4" align="center">Nenhum cargo encontrado.</td>
+                </tr>
+            @endif
+        </tbody>
+    </table>
+</div>
+
+@if($isPaginator)
+    <div class="mt-15">
+        {{ $dados->links() }}
+    </div>
+@endif
