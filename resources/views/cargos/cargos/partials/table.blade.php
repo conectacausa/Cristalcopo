@@ -72,12 +72,11 @@
                                 </button>
 
                                 @if(!empty($permissoes['pode_editar']))
-                                    <button type="button"
-                                            class="waves-effect waves-light btn mb-5 bg-gradient-primary btn-editar-cargo"
-                                            data-id="{{ $cargo->id }}"
-                                            title="Editar">
+                                    <a href="{{ route('cargos.cargos.edit', $cargo->id) }}"
+                                       class="waves-effect waves-light btn mb-5 bg-gradient-primary"
+                                       title="Editar">
                                         <i class="fa fa-edit"></i>
-                                    </button>
+                                    </a>
                                 @endif
 
                                 @if(!empty($permissoes['pode_excluir']))
