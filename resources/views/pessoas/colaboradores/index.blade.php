@@ -3,6 +3,41 @@
 @section('title', 'Colaboradores')
 
 @section('content')
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+
+<style>
+    .select2-container {
+        width: 100% !important;
+    }
+
+    .select2-container .select2-selection--multiple {
+        min-height: 38px !important;
+        border: 1px solid #d2d6de !important;
+        border-radius: 4px !important;
+        padding: 2px 6px !important;
+        background: #fff !important;
+    }
+
+    .select2-container--default .select2-selection--multiple .select2-selection__rendered {
+        display: block !important;
+        padding: 0 !important;
+        margin: 0 !important;
+    }
+
+    .select2-container--default .select2-selection--multiple .select2-selection__choice {
+        margin-top: 4px !important;
+        margin-right: 4px !important;
+    }
+
+    .select2-container--default .select2-selection--multiple .select2-selection__placeholder {
+        color: #999 !important;
+    }
+
+    .select2-dropdown {
+        z-index: 99999 !important;
+    }
+</style>
+
 <div class="content-wrapper">
     <div class="container-full">
 
@@ -39,56 +74,34 @@
 
     </div>
 </div>
-@endsection
 
-@push('styles')
-<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
-<style>
-    .select2-container {
-        width: 100% !important;
-    }
-
-    .select2-container .select2-selection--multiple {
-        min-height: 38px !important;
-        border: 1px solid #d2d6de !important;
-        border-radius: 4px !important;
-        padding: 2px 6px !important;
-    }
-
-    .select2-container--default .select2-selection--multiple .select2-selection__rendered {
-        display: block !important;
-        white-space: normal !important;
-        padding-top: 2px !important;
-    }
-
-    .select2-container--default .select2-selection--multiple .select2-selection__choice {
-        margin-top: 4px !important;
-    }
-
-    .select2-container--default .select2-selection--multiple .select2-selection__placeholder {
-        color: #999 !important;
-    }
-</style>
-@endpush
-
-@push('scripts')
 <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 
 <script>
-$(document).ready(function () {
+document.addEventListener('DOMContentLoaded', function () {
     let filtroTimeout = null;
 
-    function iniciarSelect2() {
-        $('select.select2').each(function () {
-            if ($(this).hasClass('select2-hidden-accessible')) {
-                $(this).select2('destroy');
+    function initSelect2() {
+        const selects = [
+            $('select[name="filiais[]"]'),
+            $('select[name="setores[]"]'),
+            $('select[name="cargos[]"]')
+        ];
+
+        selects.forEach(function ($select) {
+            if ($select.length === 0) {
+                return;
             }
 
-            $(this).select2({
+            if ($select.hasClass('select2-hidden-accessible')) {
+                $select.select2('destroy');
+            }
+
+            $select.select2({
                 width: '100%',
-                placeholder: $(this).data('placeholder') || 'Selecione',
-                allowClear: false,
-                closeOnSelect: false
+                placeholder: $select.data('placeholder') || 'Selecione',
+                closeOnSelect: false,
+                allowClear: false
             });
         });
     }
@@ -99,7 +112,7 @@ $(document).ready(function () {
 
         $.ajax({
             url: targetUrl,
-            method: 'GET',
+            type: 'GET',
             data: form.serialize(),
             success: function (html) {
                 $('#resultado-tabela').html(html);
@@ -110,16 +123,32 @@ $(document).ready(function () {
         });
     }
 
+    function dispararFiltroComDelay() {
+        clearTimeout(filtroTimeout);
+        filtroTimeout = setTimeout(function () {
+            atualizarTabela();
+        }, 300);
+    }
+
     function carregarSetores(callback = null) {
         const filiais = $('select[name="filiais[]"]').val() || [];
         const setoresSelecionados = @json($filtros['setores'] ?? []);
         const $setores = $('select[name="setores[]"]');
         const $cargos = $('select[name="cargos[]"]');
 
-        $setores.prop('disabled', true).empty().trigger('change');
-        $cargos.prop('disabled', true).empty().trigger('change');
+        $setores.prop('disabled', true).empty();
+        $cargos.prop('disabled', true).empty();
+
+        if ($setores.hasClass('select2-hidden-accessible')) {
+            $setores.trigger('change');
+        }
+
+        if ($cargos.hasClass('select2-hidden-accessible')) {
+            $cargos.trigger('change');
+        }
 
         if (filiais.length === 0) {
+            initSelect2();
             if (typeof callback === 'function') {
                 callback();
             }
@@ -128,7 +157,7 @@ $(document).ready(function () {
 
         $.ajax({
             url: "{{ route('pessoas.colaboradores.setores') }}",
-            method: 'GET',
+            type: 'GET',
             traditional: true,
             data: { filiais: filiais },
             success: function (response) {
@@ -140,7 +169,8 @@ $(document).ready(function () {
                     $setores.append(option);
                 });
 
-                $setores.prop('disabled', false).trigger('change.select2');
+                $setores.prop('disabled', false);
+                initSelect2();
 
                 if (typeof callback === 'function') {
                     callback();
@@ -157,9 +187,14 @@ $(document).ready(function () {
         const cargosSelecionados = @json($filtros['cargos'] ?? []);
         const $cargos = $('select[name="cargos[]"]');
 
-        $cargos.prop('disabled', true).empty().trigger('change');
+        $cargos.prop('disabled', true).empty();
+
+        if ($cargos.hasClass('select2-hidden-accessible')) {
+            $cargos.trigger('change');
+        }
 
         if (setores.length === 0) {
+            initSelect2();
             if (typeof callback === 'function') {
                 callback();
             }
@@ -168,7 +203,7 @@ $(document).ready(function () {
 
         $.ajax({
             url: "{{ route('pessoas.colaboradores.cargos') }}",
-            method: 'GET',
+            type: 'GET',
             traditional: true,
             data: { setores: setores },
             success: function (response) {
@@ -180,7 +215,8 @@ $(document).ready(function () {
                     $cargos.append(option);
                 });
 
-                $cargos.prop('disabled', false).trigger('change.select2');
+                $cargos.prop('disabled', false);
+                initSelect2();
 
                 if (typeof callback === 'function') {
                     callback();
@@ -192,14 +228,7 @@ $(document).ready(function () {
         });
     }
 
-    function dispararFiltroComDelay() {
-        clearTimeout(filtroTimeout);
-        filtroTimeout = setTimeout(function () {
-            atualizarTabela();
-        }, 300);
-    }
-
-    iniciarSelect2();
+    initSelect2();
 
     const filiaisIniciais = $('select[name="filiais[]"]').val() || [];
     if (filiaisIniciais.length > 0) {
@@ -212,6 +241,7 @@ $(document).ready(function () {
     } else {
         $('select[name="setores[]"]').prop('disabled', true);
         $('select[name="cargos[]"]').prop('disabled', true);
+        initSelect2();
     }
 
     $('#form-filtros').on('input', 'input[name="texto"]', function () {
@@ -270,4 +300,4 @@ $(document).ready(function () {
     });
 });
 </script>
-@endpush
+@endsection
