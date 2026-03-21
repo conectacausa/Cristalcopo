@@ -22,15 +22,17 @@
                             </a>
 
                             <form action="{{ route('aprovacao.fluxo.delete', $fluxo->id) }}"
-                                  method="POST"
-                                  style="display:inline-block;"
-                                  onsubmit="return confirm('Deseja realmente excluir este fluxo de aprovação?');">
-                                @csrf
-                                <button type="submit"
-                                        class="waves-effect waves-light btn mb-5 bg-gradient-danger">
-                                    <i class="fa fa-trash-o"></i>
-                                </button>
-                            </form>
+      method="POST"
+      class="form-delete"
+      data-nome="{{ $fluxo->nome_fluxo }}"
+      style="display:inline-block;">
+    @csrf
+
+    <button type="button"
+            class="waves-effect waves-light btn mb-5 bg-gradient-danger btn-delete">
+        <i class="fa fa-trash-o"></i>
+    </button>
+</form>
                         </div>
                     </td>
                 </tr>
