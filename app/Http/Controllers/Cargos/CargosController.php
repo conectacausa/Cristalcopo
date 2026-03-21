@@ -22,24 +22,7 @@ class CargosController extends Controller
             ->select('id', 'nome_fantasia')
             ->get();
 
-        $setores = DB::table('empresa_setores')
-            ->whereNull('deleted_at')
-            ->orderBy('descricao')
-            ->select('id', 'descricao')
-            ->get();
-
-        $cbos = DB::table('cargos_cbo')
-            ->whereNull('deleted_at')
-            ->orderBy('codigo_cbo')
-            ->select('id', 'codigo_cbo', 'descricao_cbo')
-            ->get();
-
-        return view('cargos.cargos.index', compact(
-            'filiais',
-            'setores',
-            'cbos',
-            'permissoes'
-        ));
+        return view('cargos.cargos.index', compact('filiais', 'permissoes'));
     }
 
     public function list(Request $request)
@@ -129,8 +112,6 @@ class CargosController extends Controller
             foreach ($dados->items() as $item) {
                 $item->filiais_lista = $filiaisPorCargo[$item->id] ?? [];
                 $item->setores_lista = $setoresPorCargo[$item->id] ?? [];
-                $item->filiais_ids = array_column($item->filiais_lista, 'id');
-                $item->setores_ids = array_column($item->setores_lista, 'id');
             }
 
             return view('cargos.cargos.partials.table', compact('dados', 'permissoes'))->render();
@@ -140,6 +121,91 @@ class CargosController extends Controller
                 'error' => $e->getMessage(),
             ], 500);
         }
+    }
+
+    public function create()
+    {
+        $permissoes = $this->getPermissoes();
+
+        abort_unless($permissoes['pode_gravar'], 403);
+
+        $filiais = DB::table('empresa_filial')
+            ->whereNull('deleted_at')
+            ->orderBy('nome_fantasia')
+            ->select('id', 'nome_fantasia')
+            ->get();
+
+        $setores = DB::table('empresa_setores')
+            ->whereNull('deleted_at')
+            ->orderBy('descricao')
+            ->select('id', 'descricao')
+            ->get();
+
+        $cbos = DB::table('cargos_cbo')
+            ->whereNull('deleted_at')
+            ->orderBy('codigo_cbo')
+            ->select('id', 'codigo_cbo', 'descricao_cbo')
+            ->get();
+
+        $cargo = null;
+
+        return view('cargos.cargos.form', compact(
+            'cargo',
+            'filiais',
+            'setores',
+            'cbos',
+            'permissoes'
+        ));
+    }
+
+    public function editPage($id)
+    {
+        $permissoes = $this->getPermissoes();
+
+        abort_unless($permissoes['pode_editar'], 403);
+
+        $cargo = DB::table('cargos')
+            ->where('id', $id)
+            ->whereNull('deleted_at')
+            ->first();
+
+        abort_if(!$cargo, 404);
+
+        $filiais = DB::table('empresa_filial')
+            ->whereNull('deleted_at')
+            ->orderBy('nome_fantasia')
+            ->select('id', 'nome_fantasia')
+            ->get();
+
+        $setores = DB::table('empresa_setores')
+            ->whereNull('deleted_at')
+            ->orderBy('descricao')
+            ->select('id', 'descricao')
+            ->get();
+
+        $cbos = DB::table('cargos_cbo')
+            ->whereNull('deleted_at')
+            ->orderBy('codigo_cbo')
+            ->select('id', 'codigo_cbo', 'descricao_cbo')
+            ->get();
+
+        $cargo->filiais = DB::table('vinculo_cargo_x_filial')
+            ->where('cargo_id', $id)
+            ->pluck('filial_id')
+            ->toArray();
+
+        $cargo->setores = DB::table('vinculo_cargo_x_setor')
+            ->where('cargo_id', $id)
+            ->pluck('setor_id')
+            ->toArray();
+
+        return view('cargos.cargos.form', compact(
+            'cargo',
+            'filiais',
+            'setores',
+            'cbos',
+            'permissoes'
+        ));
     }
 
     public function show($id)
@@ -260,66 +326,18 @@ class CargosController extends Controller
 
             DB::commit();
 
-            return response()->json([
-                'success' => true,
-                'message' => $configuracaoFluxo
+            return redirect()
+                ->route('cargos.cargos.edit', $cargoId)
+                ->with('success', $configuracaoFluxo
                     ? 'Cargo salvo com sucesso e enviado para aprovação.'
-                    : 'Cargo salvo com sucesso.',
-            ]);
+                    : 'Cargo salvo com sucesso.');
         } catch (Throwable $e) {
             DB::rollBack();
 
-            return response()->json([
-                'success' => false,
-                'message' => 'Erro ao salvar cargo.',
-                'error' => $e->getMessage(),
-            ], 500);
-        }
-    }
-
-    public function edit($id)
-    {
-        try {
-            $permissoes = $this->getPermissoes();
-
-            abort_unless($permissoes['pode_editar'], 403);
-
-            $cargo = DB::table('cargos')
-                ->where('id', $id)
-                ->whereNull('deleted_at')
-                ->first();
-
-            abort_if(!$cargo, 404);
-
-            $filiais = DB::table('vinculo_cargo_x_filial')
-                ->where('cargo_id', $id)
-                ->pluck('filial_id')
-                ->toArray();
-
-            $setores = DB::table('vinculo_cargo_x_setor')
-                ->where('cargo_id', $id)
-                ->pluck('setor_id')
-                ->toArray();
-
-            return response()->json([
-                'success' => true,
-                'data' => [
-                    'id' => $cargo->id,
-                    'titulo_cargo' => $cargo->titulo_cargo,
-                    'codigo_importacao' => $cargo->codigo_importacao,
-                    'cargo_cbo_id' => $cargo->cargo_cbo_id,
-                    'status_aprovacao' => $cargo->status_aprovacao,
-                    'conta_base_jovem_aprendiz' => (bool) $cargo->conta_base_jovem_aprendiz,
-                    'filiais' => $filiais,
-                    'setores' => $setores,
-                ]
-            ]);
-        } catch (Throwable $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Erro ao carregar dados do cargo.',
-                'error' => $e->getMessage(),
-            ], 500);
+            return redirect()
+                ->back()
+                ->withInput()
+                ->with('error', 'Erro ao salvar cargo: ' . $e->getMessage());
         }
     }
 
@@ -354,10 +372,7 @@ class CargosController extends Controller
                     'updated_at' => now(),
                 ]);
 
-            DB::table('vinculo_cargo_x_filial')
-                ->where('cargo_id', $id)
-                ->delete();
-
+            DB::table('vinculo_cargo_x_filial')->where('cargo_id', $id)->delete();
             foreach ($request->filiais as $filialId) {
                 DB::table('vinculo_cargo_x_filial')->insert([
                     'cargo_id' => $id,
@@ -367,10 +382,7 @@ class CargosController extends Controller
                 ]);
             }
 
-            DB::table('vinculo_cargo_x_setor')
-                ->where('cargo_id', $id)
-                ->delete();
-
+            DB::table('vinculo_cargo_x_setor')->where('cargo_id', $id)->delete();
             foreach ($request->setores as $setorId) {
                 DB::table('vinculo_cargo_x_setor')->insert([
                     'cargo_id' => $id,
@@ -382,18 +394,16 @@ class CargosController extends Controller
 
             DB::commit();
 
-            return response()->json([
-                'success' => true,
-                'message' => 'Cargo atualizado com sucesso.',
-            ]);
+            return redirect()
+                ->route('cargos.cargos.edit', $id)
+                ->with('success', 'Cargo atualizado com sucesso.');
         } catch (Throwable $e) {
             DB::rollBack();
 
-            return response()->json([
-                'success' => false,
-                'message' => 'Erro ao atualizar cargo.',
-                'error' => $e->getMessage(),
-            ], 500);
+            return redirect()
+                ->back()
+                ->withInput()
+                ->with('error', 'Erro ao atualizar cargo: ' . $e->getMessage());
         }
     }
 
@@ -406,13 +416,8 @@ class CargosController extends Controller
 
             DB::beginTransaction();
 
-            DB::table('vinculo_cargo_x_filial')
-                ->where('cargo_id', $id)
-                ->delete();
-
-            DB::table('vinculo_cargo_x_setor')
-                ->where('cargo_id', $id)
-                ->delete();
+            DB::table('vinculo_cargo_x_filial')->where('cargo_id', $id)->delete();
+            DB::table('vinculo_cargo_x_setor')->where('cargo_id', $id)->delete();
 
             DB::table('cargos')
                 ->where('id', $id)
