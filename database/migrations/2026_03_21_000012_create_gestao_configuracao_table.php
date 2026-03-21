@@ -2,8 +2,8 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
@@ -14,11 +14,6 @@ return new class extends Migration
             $table->boolean('cargo_tem_aprovacao')->default(false);
             $table->unsignedBigInteger('cargo_fluxo_aprovacao_id')->nullable();
             $table->timestamps();
-
-            $table->foreign('cargo_fluxo_aprovacao_id')
-                ->references('id')
-                ->on('aprovacao_fluxos')
-                ->nullOnDelete();
         });
 
         DB::table('gestao_configuracao')->insert([
