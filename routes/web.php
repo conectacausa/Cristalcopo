@@ -10,6 +10,7 @@ use App\Http\Controllers\TesteAprovacaoController;
 use App\Http\Controllers\Aprovacao\FluxoAprovacaoController;
 use App\Http\Controllers\Aprovacao\ConfiguracaoFluxoController;
 use App\Http\Controllers\Cargos\CargosController;
+use App\Http\Controllers\Sst\RiscosController;
 
 Route::get('/', function () {
     return auth()->check()
@@ -95,19 +96,31 @@ Route::middleware(['auth', 'user.active'])->group(function () {
         Route::get('/', [ConfiguracaoFluxoController::class, 'index'])->name('index');
         Route::post('/store', [ConfiguracaoFluxoController::class, 'store'])->name('store');
     });
-    Route::middleware(['auth', 'user.active', 'screen:cargos'])->group(function () {
-        Route::get('/cargos', [CargosController::class, 'index'])->name('cargos.cargos.index');
-        Route::get('/cargos/list', [CargosController::class, 'list'])->name('cargos.cargos.list');
+    Route::middleware(['auth', 'user.active'])->group(function () {
+        Route::prefix('sst/riscos')
+            ->name('sst.riscos.')
+            ->middleware('screen:sst/riscos')
+            ->group(function () {
+                Route::get('/', [RiscosController::class, 'index'])->name('index');
+                Route::get('/list', [RiscosController::class, 'list'])->name('list');
+                Route::post('/store', [RiscosController::class, 'store'])->name('store');
+                Route::get('/edit/{id}', [RiscosController::class, 'edit'])->name('edit');
+                Route::post('/update/{id}', [RiscosController::class, 'update'])->name('update');
+                Route::delete('/delete/{id}', [RiscosController::class, 'delete'])->name('delete');
+            });
     
-        Route::get('/cargos/create', [CargosController::class, 'create'])->name('cargos.cargos.create');
-        Route::post('/cargos/store', [CargosController::class, 'store'])->name('cargos.cargos.store');
-    
-        Route::get('/cargos/edit/{id}', [CargosController::class, 'editPage'])->name('cargos.cargos.edit');
-        Route::post('/cargos/update/{id}', [CargosController::class, 'update'])->name('cargos.cargos.update');
-    
-        Route::get('/cargos/show/{id}', [CargosController::class, 'show'])->name('cargos.cargos.show');
-        Route::get('/cargos/setores-por-filiais', [CargosController::class, 'setoresPorFiliais'])->name('cargos.cargos.setores_por_filiais');
-    
-        Route::delete('/cargos/delete/{id}', [CargosController::class, 'delete'])->name('cargos.cargos.delete');
-    });
+        Route::prefix('cargos')
+            ->name('cargos.cargos.')
+            ->middleware('screen:cargos')
+            ->group(function () {
+                Route::get('/', [CargosController::class, 'index'])->name('index');
+                Route::get('/list', [CargosController::class, 'list'])->name('list');
+                Route::get('/create', [CargosController::class, 'create'])->name('create');
+                Route::post('/store', [CargosController::class, 'store'])->name('store');
+                Route::get('/edit/{id}', [CargosController::class, 'editPage'])->name('edit');
+                Route::post('/update/{id}', [CargosController::class, 'update'])->name('update');
+                Route::get('/show/{id}', [CargosController::class, 'show'])->name('show');
+                Route::get('/setores-por-filiais', [CargosController::class, 'setoresPorFiliais'])->name('setores_por_filiais');
+                Route::delete('/delete/{id}', [CargosController::class, 'delete'])->name('delete');
+            });
 });
