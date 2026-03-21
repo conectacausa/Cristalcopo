@@ -13,6 +13,7 @@
     <link rel="stylesheet" href="{{ asset('assets/css/vendors_css.css') }}">
     <link rel="stylesheet" href="{{ asset('assets/css/style.css') }}">
     <link rel="stylesheet" href="{{ asset('assets/css/skin_color.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css">
 </head>
 <body class="hold-transition light-skin sidebar-mini theme-primary fixed">
 
@@ -107,6 +108,16 @@
 <script src="{{ asset('assets/vendor_components/sweetalert/sweetalert.min.js') }}"></script>
 <script src="{{ asset('assets/vendor_components/sweetalert/jquery.sweet-alert.custom.js') }}"></script>
 <script src="{{ asset('assets/js/template.js') }}"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
+
+<script>
+    toastr.options = {
+        closeButton: true,
+        progressBar: true,
+        positionClass: "toast-top-right",
+        timeOut: "4000"
+    };
+</script>
 
 @if(session('success'))
     <script>
@@ -141,9 +152,7 @@
         $.ajax({
             url: "{{ route('aprovacao.fluxo.index') }}",
             type: "GET",
-            data: {
-                descricao: descricao
-            },
+            data: { descricao: descricao },
             success: function(response) {
                 $('#fluxos-table-wrapper').html(response.html);
             },
