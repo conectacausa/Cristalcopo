@@ -1,6 +1,28 @@
 @php
     $isPaginator = $dados instanceof \Illuminate\Contracts\Pagination\Paginator
         || $dados instanceof \Illuminate\Contracts\Pagination\LengthAwarePaginator;
+
+    $statusLabel = function ($status) {
+        return match ($status) {
+            'rascunho' => 'Rascunho',
+            'pendente_aprovacao' => 'Pendente Aprovação',
+            'em_aprovacao' => 'Em Aprovação',
+            'aprovado' => 'Aprovado',
+            'reprovado' => 'Reprovado',
+            'cancelado' => 'Cancelado',
+            default => ucfirst(str_replace('_', ' ', $status ?? ''));
+        };
+    };
+
+    $statusClass = function ($status) {
+        return match ($status) {
+            'aprovado' => 'badge badge-success',
+            'reprovado' => 'badge badge-danger',
+            'cancelado' => 'badge badge-dark',
+            'pendente_aprovacao', 'em_aprovacao' => 'badge badge-warning',
+            default => 'badge badge-secondary',
+        };
+    };
 @endphp
 
 <div class="table-responsive">
@@ -20,9 +42,9 @@
                         <td>
                             <strong>{{ $cargo->titulo_cargo }}</strong>
                             <span class="cargo-cbo">
-                                {{ $cargo->cbo->codigo_cbo ?? '-' }}
-                                @if(!empty($cargo->cbo->descricao_cbo))
-                                    - {{ $cargo->cbo->descricao_cbo }}
+                                {{ $cargo->codigo_cbo ?? '-' }}
+                                @if(!empty($cargo->descricao_cbo))
+                                    - {{ $cargo->descricao_cbo }}
                                 @endif
                             </span>
                         </td>
@@ -30,31 +52,33 @@
                         <td>
                             <div>
                                 <strong>Filiais:</strong>
-                                {{ $cargo->filiais->pluck('nome_fantasia')->implode(', ') ?: '-' }}
+                                {{ collect($cargo->filiais_lista ?? [])->pluck('nome')->implode(', ') ?: '-' }}
                             </div>
                             <div class="mt-5 text-muted">
                                 <strong>Setores:</strong>
-                                {{ $cargo->setores->pluck('descricao')->implode(', ') ?: '-' }}
+                                {{ collect($cargo->setores_lista ?? [])->pluck('nome')->implode(', ') ?: '-' }}
                             </div>
                         </td>
 
                         <td align="center">
-                            <span class="{{ $cargo->status_badge_class }}">
-                                {{ $cargo->status_formatado }}
+                            <span class="{{ $statusClass($cargo->status_aprovacao) }}">
+                                {{ $statusLabel($cargo->status_aprovacao) }}
                             </span>
                         </td>
 
                         <td align="center">
                             <div class="clearfix">
                                 <button type="button"
-                                        class="waves-effect waves-light btn mb-5 bg-gradient-info"
-                                        title="Baixar">
+                                        class="waves-effect waves-light btn mb-5 bg-gradient-info btn-visualizar-cargo"
+                                        data-id="{{ $cargo->id }}"
+                                        title="Visualizar">
                                     <i class="fa fa-download"></i>
                                 </button>
 
                                 @if($permissoes['pode_editar'])
                                     <button type="button"
-                                            class="waves-effect waves-light btn mb-5 bg-gradient-primary"
+                                            class="waves-effect waves-light btn mb-5 bg-gradient-primary btn-editar-cargo"
+                                            data-id="{{ $cargo->id }}"
                                             title="Editar">
                                         <i class="fa fa-edit"></i>
                                     </button>
