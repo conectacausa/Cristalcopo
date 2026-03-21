@@ -131,6 +131,23 @@
 
                                     <div class="col-md-12">
                                         <div class="form-group">
+                                            <label class="form-label">Riscos Ocupacionais</label>
+                                            @php
+                                                $riscosSelecionados = old('riscos', $cargo->riscos ?? []);
+                                            @endphp
+                                            <select class="form-control select2" name="riscos[]" multiple>
+                                                @foreach($riscos as $risco)
+                                                    <option value="{{ $risco->id }}"
+                                                        {{ in_array($risco->id, $riscosSelecionados) ? 'selected' : '' }}>
+                                                        {{ $risco->descricao }}{{ $risco->grupo_risco ? ' - ' . $risco->grupo_risco : '' }}
+                                                    </option>
+                                                @endforeach
+                                            </select>
+                                        </div>
+                                    </div>
+
+                                    <div class="col-md-12">
+                                        <div class="form-group">
                                             <div class="checkbox">
                                                 <input type="checkbox"
                                                        id="conta_base_jovem_aprendiz"
