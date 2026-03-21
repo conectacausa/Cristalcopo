@@ -7,11 +7,7 @@
 
             <div class="box-body">
                 <form id="form-filtros" action="{{ route('pessoas.colaboradores.index') }}" method="GET">
-
-                    {{-- PRIMEIRA LINHA --}}
                     <div class="row">
-
-                        {{-- NOME / MATRICULA / CPF --}}
                         <div class="col-md-9">
                             <div class="form-group">
                                 <label class="form-label">Nome, Matrícula ou CPF</label>
@@ -25,7 +21,6 @@
                             </div>
                         </div>
 
-                        {{-- SITUAÇÃO --}}
                         <div class="col-md-3">
                             <div class="form-group">
                                 <label class="form-label">Situação</label>
@@ -36,20 +31,20 @@
                                 </select>
                             </div>
                         </div>
-
                     </div>
 
-                    {{-- SEGUNDA LINHA --}}
                     <div class="row">
-
-                        {{-- FILIAIS --}}
                         <div class="col-md-4">
                             <div class="form-group">
                                 <label class="form-label">Filiais</label>
-                                <select name="filiais[]" class="form-control select2" multiple>
+                                <select
+                                    name="filiais[]"
+                                    class="form-control"
+                                    multiple="multiple"
+                                    data-placeholder="Selecione as filiais"
+                                >
                                     @foreach($filiaisLista as $filial)
-                                        <option value="{{ $filial->id }}"
-                                            @selected(in_array($filial->id, $filtros['filiais'] ?? []))>
+                                        <option value="{{ $filial->id }}" @selected(in_array($filial->id, $filtros['filiais'] ?? []))>
                                             {{ $filial->nome_fantasia }}
                                         </option>
                                     @endforeach
@@ -57,28 +52,32 @@
                             </div>
                         </div>
 
-                        {{-- SETORES (DINÂMICO) --}}
                         <div class="col-md-4">
                             <div class="form-group">
                                 <label class="form-label">Setores</label>
-                                <select name="setores[]" class="form-control select2" multiple>
-                                    {{-- carregado via AJAX --}}
+                                <select
+                                    name="setores[]"
+                                    class="form-control"
+                                    multiple="multiple"
+                                    data-placeholder="Selecione os setores"
+                                >
                                 </select>
                             </div>
                         </div>
 
-                        {{-- CARGOS (DINÂMICO) --}}
                         <div class="col-md-4">
                             <div class="form-group">
                                 <label class="form-label">Cargos</label>
-                                <select name="cargos[]" class="form-control select2" multiple>
-                                    {{-- carregado via AJAX --}}
+                                <select
+                                    name="cargos[]"
+                                    class="form-control"
+                                    multiple="multiple"
+                                    data-placeholder="Selecione os cargos"
+                                >
                                 </select>
                             </div>
                         </div>
-
                     </div>
-
                 </form>
             </div>
         </div>
