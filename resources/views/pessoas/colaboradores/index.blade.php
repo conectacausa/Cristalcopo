@@ -23,14 +23,12 @@
             </div>
         </div>
 
-        {{-- FILTROS --}}
         @include('pessoas.colaboradores.partials.filtros')
 
         <section class="content">
             <div class="row">
                 <div class="col-12">
                     <div class="box">
-
                         <div class="box-header with-border">
                             <h4 class="box-title">Colaboradores</h4>
                         </div>
@@ -59,7 +57,6 @@
 <script>
 $(document).ready(function () {
 
-    // ✅ SELECT2 (PADRÃO CARGOS)
     $('.select2').select2({
         placeholder: 'Selecione',
         allowClear: true,
@@ -82,13 +79,16 @@ $(document).ready(function () {
             success: function (response) {
                 $('#resultado-tabela').html(response);
             },
-            error: function () {
-                toastr.error('Erro ao carregar colaboradores.');
+            error: function (xhr, status) {
+                if (status === 'abort') {
+                    return;
+                }
+
+                toastr.error('Não foi possível carregar os colaboradores.');
             }
         });
     }
 
-    // 🔎 TEXTO
     $('input[name="texto"]').on('keyup', function () {
         clearTimeout(debounce);
         debounce = setTimeout(function () {
@@ -96,14 +96,11 @@ $(document).ready(function () {
         }, 300);
     });
 
-    // 📌 SITUAÇÃO
     $('select[name="situacao"]').on('change', function () {
         carregarTabela();
     });
 
-    // 🏢 FILIAIS → SETORES
     $('select[name="filiais[]"]').on('change', function () {
-
         let filiais = $(this).val();
 
         $.ajax({
@@ -111,16 +108,17 @@ $(document).ready(function () {
             method: 'GET',
             data: { filiais: filiais },
             success: function (data) {
-
                 let $setores = $('select[name="setores[]"]');
+                let $cargos = $('select[name="cargos[]"]');
+
                 $setores.empty();
+                $cargos.empty();
 
                 data.forEach(function (item) {
                     $setores.append(new Option(item.descricao, item.id));
                 });
 
                 $setores.trigger('change');
-
                 carregarTabela();
             },
             error: function () {
@@ -129,9 +127,7 @@ $(document).ready(function () {
         });
     });
 
-    // 🧩 SETORES → CARGOS
     $('select[name="setores[]"]').on('change', function () {
-
         let setores = $(this).val();
 
         $.ajax({
@@ -139,7 +135,6 @@ $(document).ready(function () {
             method: 'GET',
             data: { setores: setores },
             success: function (data) {
-
                 let $cargos = $('select[name="cargos[]"]');
                 $cargos.empty();
 
@@ -148,7 +143,6 @@ $(document).ready(function () {
                 });
 
                 $cargos.trigger('change');
-
                 carregarTabela();
             },
             error: function () {
@@ -157,18 +151,15 @@ $(document).ready(function () {
         });
     });
 
-    // 🧾 CARGOS
     $('select[name="cargos[]"]').on('change', function () {
         carregarTabela();
     });
 
-    // 📄 PAGINAÇÃO AJAX
     $(document).on('click', '#resultado-tabela .pagination a', function (e) {
         e.preventDefault();
         carregarTabela($(this).attr('href'));
     });
 
-    // 🗑️ EXCLUSÃO (SWEETALERT PADRÃO)
     $(document).on('click', '.btn-excluir-colaborador', function (e) {
         e.preventDefault();
 
