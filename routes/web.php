@@ -8,6 +8,7 @@ use App\Http\Controllers\CargoCboController;
 use App\Http\Controllers\Empresa\SetorController;
 use App\Http\Controllers\TesteAprovacaoController;
 use App\Http\Controllers\Aprovacao\FluxoAprovacaoController;
+use App\Http\Controllers\Aprovacao\ConfiguracaoFluxoController;
 
 Route::get('/', function () {
     return auth()->check()
@@ -85,5 +86,12 @@ Route::middleware(['auth', 'user.active'])->group(function () {
         Route::get('/edit/{id}', [FluxoAprovacaoController::class, 'edit'])->name('edit');
         Route::post('/update/{id}', [FluxoAprovacaoController::class, 'update'])->name('update');
         Route::post('/delete/{id}', [FluxoAprovacaoController::class, 'destroy'])->name('delete');
+    });
+    Route::prefix('configuracao/aprovacao-config')
+    ->name('aprovacao.configuracao.')
+    ->middleware('screen:configuracao/aprovacao')
+    ->group(function () {
+        Route::get('/', [ConfiguracaoFluxoController::class, 'index'])->name('index');
+        Route::post('/store', [ConfiguracaoFluxoController::class, 'store'])->name('store');
     });
 });
