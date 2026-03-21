@@ -6,7 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Colaborador;
 use App\Models\EmpresaFilial;
 use App\Models\EmpresaSetor;
-use App\Models\Cargo;
+use App\Models\Cargos\Cargo;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
