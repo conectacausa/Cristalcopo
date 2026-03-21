@@ -2,70 +2,155 @@
     <table class="table">
         <thead class="bg-primary">
             <tr align="center">
-                <th width="90">Foto</th>
                 <th>Colaborador</th>
-                <th>Lotação</th>
-                <th>Datas</th>
+                <th>Cargo</th>
+                <th>Setor</th>
+                <th>Filial</th>
+                <th>Admissão</th>
+                <th>Desligamento</th>
+                <th>Nascimento</th>
                 <th width="180">Ações</th>
             </tr>
         </thead>
         <tbody>
-            @forelse($colaboradores as $colaborador)
+            @forelse($dados as $colaborador)
                 <tr>
-                    <td class="text-center align-middle">
-                        <img
-                            src="{{ $colaborador->foto ? asset($colaborador->foto) : asset('assets/images/avatar/avatar-1.png') }}"
-                            alt="{{ $colaborador->nome_completo }}"
-                            style="width: 56px; height: 56px; object-fit: cover; border-radius: 8px;"
-                        >
+                    {{-- Colaborador --}}
+                    <td>
+                        <div class="fw-600">
+                            {{ $colaborador->nome_completo }}
+                        </div>
+                        <div class="text-muted">
+                            CPF: {{ \Illuminate\Support\Str::mask($colaborador->cpf, '***.***.***-**', 0) }}
+                        </div>
                     </td>
 
-                    <td class="align-middle">
-                        <strong>{{ $colaborador->nome_completo }}</strong><br>
-                        <small class="text-muted">Matrícula: {{ $colaborador->matricula ?? '-' }}</small>
+                    {{-- Cargo --}}
+                    <td>
+                        <div class="fw-500">
+                            {{ $colaborador->cargo_nome ?? '-' }}
+                        </div>
                     </td>
 
-                    <td class="align-middle">
-                        <strong>{{ optional($colaborador->cargo)->titulo_cargo ?? '-' }}</strong><br>
-                        <small class="text-muted">{{ optional($colaborador->setor)->descricao ?? '-' }}</small><br>
-                        <small class="text-muted">{{ optional($colaborador->filial)->nome_fantasia ?? '-' }}</small>
+                    {{-- Setor --}}
+                    <td>
+                        <div class="fw-500">
+                            {{ $colaborador->setor_nome ?? '-' }}
+                        </div>
                     </td>
 
-                    <td class="align-middle">
-                        <strong>Admissão: {{ optional($colaborador->admissao)->format('d/m/Y') ?? '-' }}</strong><br>
-                        <small class="text-muted">Desligamento: {{ optional($colaborador->desligamento)->format('d/m/Y') ?? '-' }}</small><br>
-                        <small class="text-muted">Nascimento: {{ optional($colaborador->data_nascimento)->format('d/m/Y') ?? '-' }}</small>
+                    {{-- Filial --}}
+                    <td>
+                        <div class="fw-500">
+                            {{ $colaborador->filial_nome ?? '-' }}
+                        </div>
                     </td>
 
-                    <td class="text-center align-middle">
-                        <div class="clearfix">
-                            @if($permissao->pode_editar)
-                                <a href="#" class="waves-effect waves-light btn mb-5 bg-gradient-primary">
+                    {{-- Admissão --}}
+                    <td align="center">
+                        <div class="fw-500">
+                            {{ $colaborador->data_admissao 
+                                ? \Carbon\Carbon::parse($colaborador->data_admissao)->format('d/m/Y') 
+                                : '-' 
+                            }}
+                        </div>
+                    </td>
+
+                    {{-- Desligamento --}}
+                    <td align="center">
+                        <div class="fw-500">
+                            {{ $colaborador->data_desligamento 
+                                ? \Carbon\Carbon::parse($colaborador->data_desligamento)->format('d/m/Y') 
+                                : '-' 
+                            }}
+                        </div>
+                    </td>
+
+                    {{-- Nascimento --}}
+                    <td align="center">
+                        <div class="fw-500">
+                            {{ $colaborador->data_nascimento 
+                                ? \Carbon\Carbon::parse($colaborador->data_nascimento)->format('d/m/Y') 
+                                : '-' 
+                            }}
+                        </div>
+                    </td>
+
+                    {{-- Ações --}}
+                    <td align="center">
+                        <div class="d-flex justify-content-center gap-1">
+
+                            @if($permissoes['pode_editar'])
+                                <a href="{{ route('colaboradores.edit', $colaborador->id) }}"
+                                   class="waves-effect waves-light btn btn-sm bg-gradient-primary">
                                     <i class="fa fa-edit"></i>
                                 </a>
                             @endif
 
-                            @if($permissao->pode_excluir)
-                                <form action="{{ route('pessoas.colaboradores.destroy', $colaborador->id) }}" method="POST" style="display:inline-block;">
-                                    @csrf
-                                    @method('DELETE')
-                                    <button type="button" class="waves-effect waves-light btn mb-5 bg-gradient-danger btn-excluir-colaborador">
-                                        <i class="fa fa-trash-o"></i>
-                                    </button>
-                                </form>
+                            @if($permissoes['pode_excluir'])
+                                <button 
+                                    class="waves-effect waves-light btn btn-sm bg-gradient-danger btn-delete"
+                                    data-id="{{ $colaborador->id }}">
+                                    <i class="fa fa-trash"></i>
+                                </button>
                             @endif
+
                         </div>
                     </td>
                 </tr>
             @empty
                 <tr>
-                    <td colspan="5" class="text-center">Nenhum colaborador encontrado.</td>
+                    <td colspan="8" align="center">
+                        Nenhum registro encontrado.
+                    </td>
                 </tr>
             @endforelse
         </tbody>
     </table>
 </div>
 
-<div class="mt-3">
-    {{ $colaboradores->links() }}
+{{-- Paginação --}}
+<div class="d-flex justify-content-end mt-3">
+    {{ $dados->links() }}
 </div>
+
+{{-- Script Exclusão --}}
+<script>
+    document.querySelectorAll('.btn-delete').forEach(button => {
+        button.addEventListener('click', function () {
+            const id = this.dataset.id;
+
+            swal({
+                title: "Tem certeza?",
+                text: "Esta ação não poderá ser desfeita!",
+                type: "warning",
+                showCancelButton: true,
+                confirmButtonColor: "#3085d6",
+                cancelButtonColor: "#d33",
+                confirmButtonText: "Sim, excluir!",
+                cancelButtonText: "Cancelar"
+            }, function (isConfirm) {
+                if (isConfirm) {
+                    fetch(`/colaboradores/delete/${id}`, {
+                        method: 'DELETE',
+                        headers: {
+                            'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                        }
+                    })
+                    .then(response => response.json())
+                    .then(res => {
+                        if (res.success) {
+                            toastr.success(res.message);
+                            location.reload();
+                        } else {
+                            toastr.error(res.message);
+                        }
+                    })
+                    .catch(() => {
+                        toastr.error('Erro ao excluir colaborador.');
+                    });
+                }
+            });
+        });
+    });
+</script>
