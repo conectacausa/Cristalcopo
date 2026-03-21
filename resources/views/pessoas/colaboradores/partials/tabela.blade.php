@@ -1,3 +1,11 @@
+@php
+    $dados = $dados ?? collect();
+    $permissoes = $permissoes ?? [
+        'pode_editar' => false,
+        'pode_excluir' => false,
+    ];
+@endphp
+
 <div class="table-responsive">
     <table class="table">
         <thead class="bg-primary">
@@ -15,86 +23,78 @@
         <tbody>
             @forelse($dados as $colaborador)
                 <tr>
-                    {{-- Colaborador --}}
                     <td>
                         <div class="fw-600">
-                            {{ $colaborador->nome_completo }}
+                            {{ $colaborador->nome_completo ?? '-' }}
                         </div>
                         <div class="text-muted">
-                            CPF: {{ \Illuminate\Support\Str::mask($colaborador->cpf, '***.***.***-**', 0) }}
+                            CPF:
+                            @php
+                                $cpf = preg_replace('/\D/', '', $colaborador->cpf ?? '');
+                            @endphp
+
+                            @if(strlen($cpf) === 11)
+                                {{ substr($cpf, 0, 3) }}.{{ substr($cpf, 3, 3) }}.{{ substr($cpf, 6, 3) }}-{{ substr($cpf, 9, 2) }}
+                            @else
+                                {{ $colaborador->cpf ?? '-' }}
+                            @endif
                         </div>
                     </td>
 
-                    {{-- Cargo --}}
                     <td>
                         <div class="fw-500">
                             {{ $colaborador->cargo_nome ?? '-' }}
                         </div>
                     </td>
 
-                    {{-- Setor --}}
                     <td>
                         <div class="fw-500">
                             {{ $colaborador->setor_nome ?? '-' }}
                         </div>
                     </td>
 
-                    {{-- Filial --}}
                     <td>
                         <div class="fw-500">
                             {{ $colaborador->filial_nome ?? '-' }}
                         </div>
                     </td>
 
-                    {{-- Admissão --}}
                     <td align="center">
                         <div class="fw-500">
-                            {{ $colaborador->data_admissao 
-                                ? \Carbon\Carbon::parse($colaborador->data_admissao)->format('d/m/Y') 
-                                : '-' 
-                            }}
+                            {{ !empty($colaborador->data_admissao) ? \Carbon\Carbon::parse($colaborador->data_admissao)->format('d/m/Y') : '-' }}
                         </div>
                     </td>
 
-                    {{-- Desligamento --}}
                     <td align="center">
                         <div class="fw-500">
-                            {{ $colaborador->data_desligamento 
-                                ? \Carbon\Carbon::parse($colaborador->data_desligamento)->format('d/m/Y') 
-                                : '-' 
-                            }}
+                            {{ !empty($colaborador->data_desligamento) ? \Carbon\Carbon::parse($colaborador->data_desligamento)->format('d/m/Y') : '-' }}
                         </div>
                     </td>
 
-                    {{-- Nascimento --}}
                     <td align="center">
                         <div class="fw-500">
-                            {{ $colaborador->data_nascimento 
-                                ? \Carbon\Carbon::parse($colaborador->data_nascimento)->format('d/m/Y') 
-                                : '-' 
-                            }}
+                            {{ !empty($colaborador->data_nascimento) ? \Carbon\Carbon::parse($colaborador->data_nascimento)->format('d/m/Y') : '-' }}
                         </div>
                     </td>
 
-                    {{-- Ações --}}
                     <td align="center">
                         <div class="d-flex justify-content-center gap-1">
-
-                            @if($permissoes['pode_editar'])
-                                <a href="{{ route('colaboradores.edit', $colaborador->id) }}"
-                                   class="waves-effect waves-light btn btn-sm bg-gradient-primary">
+                            @if(!empty($permissoes['pode_editar']))
+                                <a href="{{ route('pessoas.colaboradores.edit', $colaborador->id) }}"
+                                   class="waves-effect waves-light btn btn-sm bg-gradient-primary"
+                                   title="Editar">
                                     <i class="fa fa-edit"></i>
                                 </a>
                             @endif
 
-                            @if($permissoes['pode_excluir'])
-                                <button 
-                                    class="waves-effect waves-light btn btn-sm bg-gradient-danger btn-delete"
-                                    data-id="{{ $colaborador->id }}">
+                            @if(!empty($permissoes['pode_excluir']))
+                                <button type="button"
+                                        class="waves-effect waves-light btn btn-sm bg-gradient-danger btn-delete"
+                                        data-url="{{ route('pessoas.colaboradores.delete', $colaborador->id) }}"
+                                        title="Excluir">
                                     <i class="fa fa-trash"></i>
                                 </button>
                             @endif
-
                         </div>
                     </td>
                 </tr>
@@ -109,47 +109,56 @@
     </table>
 </div>
 
-{{-- Paginação --}}
-<div class="d-flex justify-content-end mt-3">
-    {{ $dados->links() }}
-</div>
+@if(method_exists($dados, 'links'))
+    <div class="d-flex justify-content-end mt-3">
+        {{ $dados->links() }}
+    </div>
+@endif
 
-{{-- Script Exclusão --}}
 <script>
-    document.querySelectorAll('.btn-delete').forEach(button => {
+    document.querySelectorAll('.btn-delete').forEach(function (button) {
         button.addEventListener('click', function () {
-            const id = this.dataset.id;
+            const url = this.dataset.url;
 
             swal({
-                title: "Tem certeza?",
-                text: "Esta ação não poderá ser desfeita!",
-                type: "warning",
+                title: 'Tem certeza?',
+                text: 'Esta ação fará a exclusão lógica do registro.',
+                type: 'warning',
                 showCancelButton: true,
-                confirmButtonColor: "#3085d6",
-                cancelButtonColor: "#d33",
-                confirmButtonText: "Sim, excluir!",
-                cancelButtonText: "Cancelar"
+                confirmButtonColor: '#3085d6',
+                cancelButtonColor: '#d33',
+                confirmButtonText: 'Sim, excluir!',
+                cancelButtonText: 'Cancelar'
             }, function (isConfirm) {
-                if (isConfirm) {
-                    fetch(`/colaboradores/delete/${id}`, {
-                        method: 'DELETE',
-                        headers: {
-                            'X-CSRF-TOKEN': '{{ csrf_token() }}'
-                        }
-                    })
-                    .then(response => response.json())
-                    .then(res => {
-                        if (res.success) {
-                            toastr.success(res.message);
-                            location.reload();
-                        } else {
-                            toastr.error(res.message);
-                        }
-                    })
-                    .catch(() => {
-                        toastr.error('Erro ao excluir colaborador.');
-                    });
+                if (!isConfirm) {
+                    return;
                 }
+
+                fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        _method: 'DELETE'
+                    })
+                })
+                .then(function (response) {
+                    return response.json();
+                })
+                .then(function (res) {
+                    if (res.success) {
+                        toastr.success(res.message);
+                        window.location.reload();
+                    } else {
+                        toastr.error(res.message || 'Erro ao excluir colaborador.');
+                    }
+                })
+                .catch(function () {
+                    toastr.error('Erro ao excluir colaborador.');
+                });
             });
         });
     });
