@@ -84,5 +84,6 @@ Route::middleware(['auth', 'user.active'])->group(function () {
         Route::post('/store', [FluxoAprovacaoController::class, 'store'])->name('store');
         Route::get('/edit/{id}', [FluxoAprovacaoController::class, 'edit'])->name('edit');
         Route::post('/update/{id}', [FluxoAprovacaoController::class, 'update'])->name('update');
+        Route::post('/delete/{id}', [FluxoAprovacaoController::class, 'destroy'])->name('delete');
     });
 });
