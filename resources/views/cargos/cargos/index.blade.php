@@ -20,12 +20,6 @@
     .select2-container {
         width: 100% !important;
     }
-
-    .resumo-texto {
-        font-size: 12px;
-        color: #6c757d;
-        margin-top: 4px;
-    }
 </style>
 @endsection
 
@@ -39,9 +33,7 @@
                     <div class="d-inline-block align-items-center">
                         <nav>
                             <ol class="breadcrumb">
-                                <li class="breadcrumb-item">
-                                    <a href="#"><i class="mdi mdi-home-outline"></i></a>
-                                </li>
+                                <li class="breadcrumb-item"><a href="#"><i class="mdi mdi-home-outline"></i></a></li>
                                 <li class="breadcrumb-item">Cadastros</li>
                                 <li class="breadcrumb-item active" aria-current="page">Cargos</li>
                             </ol>
@@ -50,18 +42,17 @@
                 </div>
 
                 @if($permissoes['pode_gravar'])
-                    <button type="button"
-                            class="waves-effect waves-light btn mb-5 bg-gradient-success w-200"
-                            id="btn-novo-cargo">
+                    <a href="{{ route('cargos.cargos.create') }}"
+                       class="waves-effect waves-light btn mb-5 bg-gradient-success w-200">
                         Novo Cargo
-                    </button>
+                    </a>
                 @endif
             </div>
         </div>
 
-        <section class="content">
-            @include('cargos.cargos.partials.filters')
+        @include('cargos.cargos.partials.filters')
 
+        <section class="content">
             <div class="row">
                 <div class="col-12">
                     <div class="box">
@@ -83,7 +74,6 @@
     </div>
 </div>
 
-@include('cargos.cargos.partials.modal-form')
 @include('cargos.cargos.partials.modal-show')
 @endsection
 
@@ -99,21 +89,6 @@
 
         let request = null;
         let debounce = null;
-
-        function limparFormulario() {
-            $('#cargo_id').val('');
-            $('#form-cargo')[0].reset();
-
-            $('#cargo_cbo_id').val('').trigger('change');
-            $('#filiais_modal').val(null).trigger('change');
-            $('#setores_modal').val(null).trigger('change');
-
-            $('#conta_base_jovem_aprendiz').prop('checked', false);
-
-            $('#cargo-modal-title').text('Novo Cargo');
-            $('#cargo-form-action').val('{{ route('cargos.cargos.store') }}');
-            $('#cargo-submit-text').text('Salvar');
-        }
 
         function carregarTabela(url = '{{ route('cargos.cargos.list') }}') {
             if (request) {
@@ -151,68 +126,9 @@
             carregarTabela($(this).attr('href'));
         });
 
-        $('#btn-novo-cargo').on('click', function () {
-            limparFormulario();
-            $('#modal-cargo').modal('show');
-        });
-
         $(document).on('click', '.btn-editar-cargo', function () {
-            limparFormulario();
-
             const id = $(this).data('id');
-
-            $.ajax({
-                url: '{{ url('/cargos/edit') }}/' + id,
-                method: 'GET',
-                success: function (response) {
-                    const data = response.data;
-
-                    $('#cargo_id').val(data.id);
-                    $('#titulo_cargo').val(data.titulo_cargo);
-                    $('#codigo_importacao').val(data.codigo_importacao);
-                    $('#cargo_cbo_id').val(data.cargo_cbo_id).trigger('change');
-                    $('#filiais_modal').val(data.filiais).trigger('change');
-                    $('#setores_modal').val(data.setores).trigger('change');
-                    $('#conta_base_jovem_aprendiz').prop('checked', !!data.conta_base_jovem_aprendiz);
-
-                    $('#cargo-modal-title').text('Editar Cargo');
-                    $('#cargo-form-action').val('{{ url('/cargos/update') }}/' + data.id);
-                    $('#cargo-submit-text').text('Atualizar');
-
-                    $('#modal-cargo').modal('show');
-                },
-                error: function () {
-                    toastr.error('Erro ao carregar dados do cargo.');
-                }
-            });
-        });
-
-        $('#form-cargo').on('submit', function (e) {
-            e.preventDefault();
-
-            const action = $('#cargo-form-action').val();
-
-            $.ajax({
-                url: action,
-                method: 'POST',
-                data: $(this).serialize(),
-                success: function (response) {
-                    $('#modal-cargo').modal('hide');
-                    toastr.success(response.message);
-                    carregarTabela();
-                },
-                error: function (xhr) {
-                    if (xhr.status === 422 && xhr.responseJSON?.errors) {
-                        const errors = xhr.responseJSON.errors;
-                        const primeiraChave = Object.keys(errors)[0];
-                        toastr.error(errors[primeiraChave][0]);
-                        return;
-                    }
-
-                    const message = xhr.responseJSON?.message ?? 'Erro ao salvar cargo.';
-                    toastr.error(message);
-                }
-            });
+            window.location.href = '{{ url('/cargos/edit') }}/' + id;
         });
 
         $(document).on('click', '.btn-excluir-cargo', function () {
@@ -262,9 +178,7 @@
 
                     $('#show_titulo_cargo').text(data.titulo_cargo ?? '-');
                     $('#show_codigo_importacao').text(data.codigo_importacao ?? '-');
-                    $('#show_cbo').text(
-                        ((data.codigo_cbo ?? '-') + ' - ' + (data.descricao_cbo ?? '-')).trim()
-                    );
+                    $('#show_cbo').text(((data.codigo_cbo ?? '-') + ' - ' + (data.descricao_cbo ?? '-')).trim());
                     $('#show_status').text(data.status_aprovacao ?? '-');
                     $('#show_jovem_aprendiz').text(data.conta_base_jovem_aprendiz ? 'Sim' : 'Não');
                     $('#show_filiais').text((data.filiais ?? []).join(', ') || '-');
