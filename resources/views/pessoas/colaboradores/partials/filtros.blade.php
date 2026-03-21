@@ -39,7 +39,7 @@
                                 <label class="form-label">Filiais</label>
                                 <select
                                     name="filiais[]"
-                                    class="form-control"
+                                    class="form-control select2"
                                     multiple="multiple"
                                     data-placeholder="Selecione as filiais"
                                 >
@@ -57,7 +57,7 @@
                                 <label class="form-label">Setores</label>
                                 <select
                                     name="setores[]"
-                                    class="form-control"
+                                    class="form-control select2"
                                     multiple="multiple"
                                     data-placeholder="Selecione os setores"
                                 >
@@ -70,7 +70,7 @@
                                 <label class="form-label">Cargos</label>
                                 <select
                                     name="cargos[]"
-                                    class="form-control"
+                                    class="form-control select2"
                                     multiple="multiple"
                                     data-placeholder="Selecione os cargos"
                                 >
