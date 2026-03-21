@@ -170,6 +170,26 @@
         }, 300);
     });
 </script>
+<script>
+    $(document).on('click', '.btn-delete', function () {
+        let form = $(this).closest('.form-delete');
+        let nome = form.data('nome');
 
+        swal({
+            title: "Confirmar exclusão",
+            text: "Deseja realmente excluir o fluxo: " + nome + "?",
+            type: "warning",
+            showCancelButton: true,
+            confirmButtonColor: "#3085d6",
+            confirmButtonText: "Sim, excluir",
+            cancelButtonText: "Cancelar",
+            closeOnConfirm: true
+        }, function (isConfirm) {
+            if (isConfirm) {
+                form.submit();
+            }
+        });
+    });
+</script>
 </body>
 </html>
