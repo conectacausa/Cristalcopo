@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Aprovacao;
 
 use App\Http\Controllers\Controller;
+use App\Models\AprovacaoConfiguracao;
 use App\Models\AprovacaoFluxo;
 use App\Models\Colaborador;
 use Illuminate\Http\Request;
@@ -223,6 +224,42 @@ class FluxoAprovacaoController extends Controller
                 ->back()
                 ->withInput()
                 ->with('error', 'Erro ao atualizar fluxo de aprovação: ' . $e->getMessage());
+        }
+    }
+
+    public function destroy($id)
+    {
+        try {
+            $fluxo = AprovacaoFluxo::with(['etapas.aprovadores'])->findOrFail($id);
+
+            $emUsoConfiguracao = AprovacaoConfiguracao::where('fluxo_id', $fluxo->id)->exists();
+
+            if ($emUsoConfiguracao) {
+                return redirect()
+                    ->route('aprovacao.fluxo.index')
+                    ->with('error', 'Este fluxo não pode ser excluído porque está vinculado em configurações.');
+            }
+
+            DB::beginTransaction();
+
+            foreach ($fluxo->etapas as $etapa) {
+                $etapa->aprovadores()->forceDelete();
+            }
+
+            $fluxo->etapas()->forceDelete();
+            $fluxo->delete();
+
+            DB::commit();
+
+            return redirect()
+                ->route('aprovacao.fluxo.index')
+                ->with('success', 'Fluxo de aprovação excluído com sucesso.');
+        } catch (\Throwable $e) {
+            DB::rollBack();
+
+            return redirect()
+                ->route('aprovacao.fluxo.index')
+                ->with('error', 'Erro ao excluir fluxo de aprovação: ' . $e->getMessage());
         }
     }
 }
