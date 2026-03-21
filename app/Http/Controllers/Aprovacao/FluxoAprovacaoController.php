@@ -214,7 +214,7 @@ class FluxoAprovacaoController extends Controller
             DB::commit();
 
             return redirect()
-                ->route('aprovacao.fluxo.index')
+                ->route('aprovacao.fluxo.edit', $fluxo->id)
                 ->with('success', 'Fluxo de aprovação atualizado com sucesso.');
         } catch (\Throwable $e) {
             DB::rollBack();
