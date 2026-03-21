@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    
+
     <title>@yield('title', 'Cristalcopo')</title>
 
     <link rel="icon" href="{{ asset('assets/images/favicon.ico') }}">
@@ -15,6 +15,15 @@
     <!-- Style-->
     <link rel="stylesheet" href="{{ asset('assets/css/style.css') }}">
     <link rel="stylesheet" href="{{ asset('assets/css/skin_color.css') }}">
+
+    <!-- Toastr CDN -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css">
+
+    <style>
+        #toast-container > .toast {
+            opacity: 1;
+        }
+    </style>
 
     @yield('styles')
 </head>
@@ -38,6 +47,24 @@
     <script src="{{ asset('assets/vendor_components/sweetalert/jquery.sweet-alert.custom.js') }}"></script>
     <script src="{{ asset('assets/js/template.js') }}"></script>
 
+    <!-- Toastr CDN -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            if (typeof toastr !== 'undefined') {
+                toastr.options = {
+                    "closeButton": true,
+                    "progressBar": true,
+                    "positionClass": "toast-top-right",
+                    "timeOut": "4000",
+                    "extendedTimeOut": "1000",
+                    "preventDuplicates": true
+                };
+            }
+        });
+    </script>
+
     @if(session('success'))
         <script>
             document.addEventListener('DOMContentLoaded', function () {
@@ -58,11 +85,31 @@
         </script>
     @endif
 
+    @if(session('warning'))
+        <script>
+            document.addEventListener('DOMContentLoaded', function () {
+                if (typeof toastr !== 'undefined') {
+                    toastr.warning(@json(session('warning')));
+                }
+            });
+        </script>
+    @endif
+
+    @if(session('info'))
+        <script>
+            document.addEventListener('DOMContentLoaded', function () {
+                if (typeof toastr !== 'undefined') {
+                    toastr.info(@json(session('info')));
+                }
+            });
+        </script>
+    @endif
+
     @if($errors->any())
         <script>
             document.addEventListener('DOMContentLoaded', function () {
                 if (typeof toastr !== 'undefined') {
-                    toastr.error('Existem campos inválidos no formulário.');
+                    toastr.error(@json($errors->first()));
                 }
             });
         </script>
