@@ -10,16 +10,18 @@ return new class extends Migration
     {
         Schema::create('cargos', function (Blueprint $table) {
             $table->id();
-            $table->string('titulo_cargo', 150);
-            $table->string('codigo_importacao', 100)->nullable()->index();
-            $table->unsignedBigInteger('cbo_id')->index();
-            $table->unsignedBigInteger('aprovacao_solicitacao_id')->nullable()->index();
-            $table->string('status_aprovacao', 50)->default('rascunho')->index();
-            $table->boolean('conta_base_jovem_aprendiz')->default(false)->index();
+            $table->string('titulo_cargo', 255);
+            $table->string('codigo_importacao', 100)->nullable();
+            $table->foreignId('cargo_cbo_id')->constrained('cargos_cbo');
+            $table->foreignId('aprovacao_solicitacao_id')->nullable()->constrained('aprovacao_solicitacao')->nullOnDelete();
+            $table->string('status_aprovacao', 50)->default('rascunho');
+            $table->boolean('conta_base_jovem_aprendiz')->default(false);
             $table->timestamps();
             $table->softDeletes();
 
-            $table->foreign('cbo_id')->references('id')->on('cbos')->cascadeOnDelete();
+            $table->index('titulo_cargo');
+            $table->index('codigo_importacao');
+            $table->index('status_aprovacao');
         });
     }
 
