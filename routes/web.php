@@ -295,6 +295,12 @@ Route::middleware(['auth', 'user.active'])->group(function () {
         Route::get('/pessoas/colaboradores', [ColaboradoresController::class, 'index'])
             ->name('pessoas.colaboradores.index');
     
+        Route::get('/pessoas/colaboradores/setores', [ColaboradoresController::class, 'getSetores'])
+            ->name('pessoas.colaboradores.setores');
+    
+        Route::get('/pessoas/colaboradores/cargos', [ColaboradoresController::class, 'getCargos'])
+            ->name('pessoas.colaboradores.cargos');
+    
         Route::delete('/pessoas/colaboradores/{colaborador}', [ColaboradoresController::class, 'destroy'])
             ->name('pessoas.colaboradores.destroy');
     });
