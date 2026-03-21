@@ -29,7 +29,7 @@ class ColaboradoresController extends Controller
         $cargos = array_filter((array) $request->get('cargos', []));
         $situacao = $request->get('situacao', 'ativo');
 
-        $query = Colaborador::query()
+        $colaboradores = Colaborador::query()
             ->with(['cargo', 'filial', 'setor'])
             ->when($texto !== '', function ($q) use ($texto) {
                 $cpf = preg_replace('/\D/', '', $texto);
@@ -56,8 +56,15 @@ class ColaboradoresController extends Controller
             ->orderBy('nome_fantasia')
             ->get();
 
+        if ($request->ajax()) {
+            return view('pessoas.colaboradores.partials.tabela', [
+                'colaboradores' => $colaboradores,
+                'permissao' => $permissao,
+            ])->render();
+        }
+
         return view('pessoas.colaboradores.index', [
-            'colaboradores' => $query,
+            'colaboradores' => $colaboradores,
             'filiaisLista' => $filiaisLista,
             'permissao' => $permissao,
             'filtros' => compact('texto', 'filiais', 'setores', 'cargos', 'situacao'),
