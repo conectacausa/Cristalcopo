@@ -9,6 +9,7 @@ use App\Http\Controllers\Empresa\SetorController;
 use App\Http\Controllers\TesteAprovacaoController;
 use App\Http\Controllers\Aprovacao\FluxoAprovacaoController;
 use App\Http\Controllers\Aprovacao\ConfiguracaoFluxoController;
+use App\Http\Controllers\Cargos\CargosController;
 
 Route::get('/', function () {
     return auth()->check()
@@ -93,5 +94,10 @@ Route::middleware(['auth', 'user.active'])->group(function () {
     ->group(function () {
         Route::get('/', [ConfiguracaoFluxoController::class, 'index'])->name('index');
         Route::post('/store', [ConfiguracaoFluxoController::class, 'store'])->name('store');
+    });
+    Route::middleware(['auth', 'user.active', 'screen:cargos'])->group(function () {
+        Route::get('/cargos', [CargosController::class, 'index'])->name('cargos.cargos.index');
+        Route::get('/cargos/list', [CargosController::class, 'list'])->name('cargos.cargos.list');
+        Route::delete('/cargos/delete/{id}', [CargosController::class, 'delete'])->name('cargos.cargos.delete');
     });
 });
