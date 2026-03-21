@@ -148,6 +148,37 @@ class CargosController extends Controller
             ->select('id', 'descricao', 'grupo_risco')
             ->get();
 
+        $responsabilidades = DB::table('cargos_responsabilidades')
+            ->whereNull('deleted_at')
+            ->orderBy('descricao')
+            ->select('id', 'descricao')
+            ->get();
+
+        $competencias = DB::table('cargos_competencias')
+            ->whereNull('deleted_at')
+            ->orderBy('descricao')
+            ->select('id', 'descricao')
+            ->get();
+
+        $formacoes = DB::table('cargos_formacoes')
+            ->whereNull('deleted_at')
+            ->orderBy('descricao')
+            ->select('id', 'descricao')
+            ->get();
+
+        $cursos = DB::table('cargos_cursos')
+            ->whereNull('deleted_at')
+            ->orderBy('descricao')
+            ->select('id', 'descricao')
+            ->get();
+
+        $escolaridades = DB::table('cargos_escolaridades')
+            ->whereNull('deleted_at')
+            ->orderBy('ordem')
+            ->orderBy('descricao')
+            ->select('id', 'descricao', 'ordem')
+            ->get();
+
         $cargo = null;
 
         $filiaisSelecionadas = array_map('intval', old('filiais', []));
@@ -158,6 +189,11 @@ class CargosController extends Controller
             'filiais',
             'cbos',
             'riscos',
+            'responsabilidades',
+            'competencias',
+            'formacoes',
+            'cursos',
+            'escolaridades',
             'setoresDisponiveis',
             'permissoes'
         ));
@@ -195,6 +231,37 @@ class CargosController extends Controller
             ->select('id', 'descricao', 'grupo_risco')
             ->get();
 
+        $responsabilidades = DB::table('cargos_responsabilidades')
+            ->whereNull('deleted_at')
+            ->orderBy('descricao')
+            ->select('id', 'descricao')
+            ->get();
+
+        $competencias = DB::table('cargos_competencias')
+            ->whereNull('deleted_at')
+            ->orderBy('descricao')
+            ->select('id', 'descricao')
+            ->get();
+
+        $formacoes = DB::table('cargos_formacoes')
+            ->whereNull('deleted_at')
+            ->orderBy('descricao')
+            ->select('id', 'descricao')
+            ->get();
+
+        $cursos = DB::table('cargos_cursos')
+            ->whereNull('deleted_at')
+            ->orderBy('descricao')
+            ->select('id', 'descricao')
+            ->get();
+
+        $escolaridades = DB::table('cargos_escolaridades')
+            ->whereNull('deleted_at')
+            ->orderBy('ordem')
+            ->orderBy('descricao')
+            ->select('id', 'descricao', 'ordem')
+            ->get();
+
         $cargo->filiais = DB::table('vinculo_cargo_x_filial')
             ->where('cargo_id', $id)
             ->pluck('filial_id')
@@ -213,6 +280,60 @@ class CargosController extends Controller
             ->map(fn ($item) => (int) $item)
             ->toArray();
 
+        $cargo->responsabilidades = DB::table('vinculo_cargo_x_responsabilidade')
+            ->where('cargo_id', $id)
+            ->pluck('responsabilidade_id')
+            ->map(fn ($item) => (int) $item)
+            ->toArray();
+
+        $cargo->competencias_payload = DB::table('vinculo_cargo_x_competencia')
+            ->where('cargo_id', $id)
+            ->orderBy('id')
+            ->get(['competencia_id', 'nota'])
+            ->map(function ($item) {
+                return [
+                    'competencia_id' => (int) $item->competencia_id,
+                    'nota' => $item->nota,
+                ];
+            })
+            ->toArray();
+
+        $cargo->formacoes_payload = DB::table('vinculo_cargo_x_formacao')
+            ->where('cargo_id', $id)
+            ->orderBy('id')
+            ->get(['formacao_id', 'tipo'])
+            ->map(function ($item) {
+                return [
+                    'formacao_id' => (int) $item->formacao_id,
+                    'tipo' => $item->tipo,
+                ];
+            })
+            ->toArray();
+
+        $cargo->cursos_payload = DB::table('vinculo_cargo_x_curso')
+            ->where('cargo_id', $id)
+            ->orderBy('id')
+            ->get(['curso_id', 'tipo'])
+            ->map(function ($item) {
+                return [
+                    'curso_id' => (int) $item->curso_id,
+                    'tipo' => $item->tipo,
+                ];
+            })
+            ->toArray();
+
+        $cargo->escolaridades_payload = DB::table('vinculo_cargo_x_escolaridade')
+            ->where('cargo_id', $id)
+            ->orderBy('id')
+            ->get(['escolaridade_id', 'tipo'])
+            ->map(function ($item) {
+                return [
+                    'escolaridade_id' => (int) $item->escolaridade_id,
+                    'tipo' => $item->tipo,
+                ];
+            })
+            ->toArray();
+
         $filiaisSelecionadas = array_map('intval', old('filiais', $cargo->filiais ?? []));
         $setoresDisponiveis = $this->buscarSetoresPorFiliaisIds($filiaisSelecionadas);
 
@@ -221,6 +342,11 @@ class CargosController extends Controller
             'filiais',
             'cbos',
             'riscos',
+            'responsabilidades',
+            'competencias',
+            'formacoes',
+            'cursos',
+            'escolaridades',
             'setoresDisponiveis',
             'permissoes'
         ));
@@ -326,12 +452,27 @@ class CargosController extends Controller
             'setores.*' => ['integer', 'exists:empresa_setores,id'],
             'riscos' => ['nullable', 'array'],
             'riscos.*' => ['integer', 'exists:sst_riscos,id'],
+            'responsabilidades' => ['nullable', 'array'],
+            'responsabilidades.*' => ['integer', 'exists:cargos_responsabilidades,id'],
+            'competencias_payload' => ['nullable', 'array'],
+            'competencias_payload.*.competencia_id' => ['nullable', 'integer', 'exists:cargos_competencias,id'],
+            'competencias_payload.*.nota' => ['nullable', 'integer', 'min:0', 'max:10'],
+            'formacoes_payload' => ['nullable', 'array'],
+            'formacoes_payload.*.formacao_id' => ['nullable', 'integer', 'exists:cargos_formacoes,id'],
+            'formacoes_payload.*.tipo' => ['nullable', 'in:desejado,obrigatorio'],
+            'cursos_payload' => ['nullable', 'array'],
+            'cursos_payload.*.curso_id' => ['nullable', 'integer', 'exists:cargos_cursos,id'],
+            'cursos_payload.*.tipo' => ['nullable', 'in:desejado,obrigatorio'],
+            'escolaridades_payload' => ['nullable', 'array'],
+            'escolaridades_payload.*.escolaridade_id' => ['nullable', 'integer', 'exists:cargos_escolaridades,id'],
+            'escolaridades_payload.*.tipo' => ['nullable', 'in:desejado,obrigatorio'],
             'conta_base_jovem_aprendiz' => ['nullable'],
         ]);
 
-        $filiaisIds = collect((array) $request->filiais)->map(fn ($item) => (int) $item)->all();
-        $setoresIds = collect((array) $request->setores)->map(fn ($item) => (int) $item)->all();
+        $filiaisIds = collect((array) $request->filiais)->map(fn ($item) => (int) $item)->unique()->all();
+        $setoresIds = collect((array) $request->setores)->map(fn ($item) => (int) $item)->unique()->all();
         $riscosIds = collect((array) $request->riscos)->map(fn ($item) => (int) $item)->unique()->all();
+        $responsabilidadesIds = collect((array) $request->responsabilidades)->map(fn ($item) => (int) $item)->unique()->all();
 
         if (!$this->setoresPertencemAsFiliais($filiaisIds, $setoresIds)) {
             return redirect()
@@ -343,11 +484,7 @@ class CargosController extends Controller
         try {
             DB::beginTransaction();
 
-            $configuracaoFluxo = DB::table('aprovacao_configuracoes')
-                ->where('tipo_referencia', 'cargo')
-                ->where('ativo', true)
-                ->first();
-
+            $configuracaoFluxo = $this->buscarConfiguracaoFluxoCargo();
             $fluxoAprovacaoId = $configuracaoFluxo->fluxo_id ?? null;
             $statusAprovacao = $fluxoAprovacaoId ? 'pendente_aprovacao' : 'rascunho';
             $aprovacaoSolicitacaoId = null;
@@ -363,32 +500,14 @@ class CargosController extends Controller
                 'updated_at' => now(),
             ]);
 
-            foreach ($filiaisIds as $filialId) {
-                DB::table('vinculo_cargo_x_filial')->insert([
-                    'cargo_id' => $cargoId,
-                    'filial_id' => $filialId,
-                    'created_at' => now(),
-                    'updated_at' => now(),
-                ]);
-            }
-
-            foreach ($setoresIds as $setorId) {
-                DB::table('vinculo_cargo_x_setor')->insert([
-                    'cargo_id' => $cargoId,
-                    'setor_id' => $setorId,
-                    'created_at' => now(),
-                    'updated_at' => now(),
-                ]);
-            }
-
-            foreach ($riscosIds as $riscoId) {
-                DB::table('vinculo_cargo_x_risco')->insert([
-                    'cargo_id' => $cargoId,
-                    'risco_id' => $riscoId,
-                    'created_at' => now(),
-                    'updated_at' => now(),
-                ]);
-            }
+            $this->sincronizarFiliais($cargoId, $filiaisIds);
+            $this->sincronizarSetores($cargoId, $setoresIds);
+            $this->sincronizarRiscos($cargoId, $riscosIds);
+            $this->sincronizarResponsabilidades($cargoId, $responsabilidadesIds);
+            $this->sincronizarCompetencias($cargoId, $request->competencias_payload ?? []);
+            $this->sincronizarFormacoes($cargoId, $request->formacoes_payload ?? []);
+            $this->sincronizarCursos($cargoId, $request->cursos_payload ?? []);
+            $this->sincronizarEscolaridades($cargoId, $request->escolaridades_payload ?? []);
 
             DB::commit();
 
@@ -423,12 +542,27 @@ class CargosController extends Controller
             'setores.*' => ['integer', 'exists:empresa_setores,id'],
             'riscos' => ['nullable', 'array'],
             'riscos.*' => ['integer', 'exists:sst_riscos,id'],
+            'responsabilidades' => ['nullable', 'array'],
+            'responsabilidades.*' => ['integer', 'exists:cargos_responsabilidades,id'],
+            'competencias_payload' => ['nullable', 'array'],
+            'competencias_payload.*.competencia_id' => ['nullable', 'integer', 'exists:cargos_competencias,id'],
+            'competencias_payload.*.nota' => ['nullable', 'integer', 'min:0', 'max:10'],
+            'formacoes_payload' => ['nullable', 'array'],
+            'formacoes_payload.*.formacao_id' => ['nullable', 'integer', 'exists:cargos_formacoes,id'],
+            'formacoes_payload.*.tipo' => ['nullable', 'in:desejado,obrigatorio'],
+            'cursos_payload' => ['nullable', 'array'],
+            'cursos_payload.*.curso_id' => ['nullable', 'integer', 'exists:cargos_cursos,id'],
+            'cursos_payload.*.tipo' => ['nullable', 'in:desejado,obrigatorio'],
+            'escolaridades_payload' => ['nullable', 'array'],
+            'escolaridades_payload.*.escolaridade_id' => ['nullable', 'integer', 'exists:cargos_escolaridades,id'],
+            'escolaridades_payload.*.tipo' => ['nullable', 'in:desejado,obrigatorio'],
             'conta_base_jovem_aprendiz' => ['nullable'],
         ]);
 
-        $filiaisIds = collect((array) $request->filiais)->map(fn ($item) => (int) $item)->all();
-        $setoresIds = collect((array) $request->setores)->map(fn ($item) => (int) $item)->all();
+        $filiaisIds = collect((array) $request->filiais)->map(fn ($item) => (int) $item)->unique()->all();
+        $setoresIds = collect((array) $request->setores)->map(fn ($item) => (int) $item)->unique()->all();
         $riscosIds = collect((array) $request->riscos)->map(fn ($item) => (int) $item)->unique()->all();
+        $responsabilidadesIds = collect((array) $request->responsabilidades)->map(fn ($item) => (int) $item)->unique()->all();
 
         if (!$this->setoresPertencemAsFiliais($filiaisIds, $setoresIds)) {
             return redirect()
@@ -452,34 +586,22 @@ class CargosController extends Controller
                 ]);
 
             DB::table('vinculo_cargo_x_filial')->where('cargo_id', $id)->delete();
-            foreach ($filiaisIds as $filialId) {
-                DB::table('vinculo_cargo_x_filial')->insert([
-                    'cargo_id' => $id,
-                    'filial_id' => $filialId,
-                    'created_at' => now(),
-                    'updated_at' => now(),
-                ]);
-            }
-
             DB::table('vinculo_cargo_x_setor')->where('cargo_id', $id)->delete();
-            foreach ($setoresIds as $setorId) {
-                DB::table('vinculo_cargo_x_setor')->insert([
-                    'cargo_id' => $id,
-                    'setor_id' => $setorId,
-                    'created_at' => now(),
-                    'updated_at' => now(),
-                ]);
-            }
-
             DB::table('vinculo_cargo_x_risco')->where('cargo_id', $id)->delete();
-            foreach ($riscosIds as $riscoId) {
-                DB::table('vinculo_cargo_x_risco')->insert([
-                    'cargo_id' => $id,
-                    'risco_id' => $riscoId,
-                    'created_at' => now(),
-                    'updated_at' => now(),
-                ]);
-            }
+            DB::table('vinculo_cargo_x_responsabilidade')->where('cargo_id', $id)->delete();
+            DB::table('vinculo_cargo_x_competencia')->where('cargo_id', $id)->delete();
+            DB::table('vinculo_cargo_x_formacao')->where('cargo_id', $id)->delete();
+            DB::table('vinculo_cargo_x_curso')->where('cargo_id', $id)->delete();
+            DB::table('vinculo_cargo_x_escolaridade')->where('cargo_id', $id)->delete();
+
+            $this->sincronizarFiliais($id, $filiaisIds);
+            $this->sincronizarSetores($id, $setoresIds);
+            $this->sincronizarRiscos($id, $riscosIds);
+            $this->sincronizarResponsabilidades($id, $responsabilidadesIds);
+            $this->sincronizarCompetencias($id, $request->competencias_payload ?? []);
+            $this->sincronizarFormacoes($id, $request->formacoes_payload ?? []);
+            $this->sincronizarCursos($id, $request->cursos_payload ?? []);
+            $this->sincronizarEscolaridades($id, $request->escolaridades_payload ?? []);
 
             DB::commit();
 
@@ -508,6 +630,11 @@ class CargosController extends Controller
             DB::table('vinculo_cargo_x_filial')->where('cargo_id', $id)->delete();
             DB::table('vinculo_cargo_x_setor')->where('cargo_id', $id)->delete();
             DB::table('vinculo_cargo_x_risco')->where('cargo_id', $id)->delete();
+            DB::table('vinculo_cargo_x_responsabilidade')->where('cargo_id', $id)->delete();
+            DB::table('vinculo_cargo_x_competencia')->where('cargo_id', $id)->delete();
+            DB::table('vinculo_cargo_x_formacao')->where('cargo_id', $id)->delete();
+            DB::table('vinculo_cargo_x_curso')->where('cargo_id', $id)->delete();
+            DB::table('vinculo_cargo_x_escolaridade')->where('cargo_id', $id)->delete();
 
             DB::table('cargos')
                 ->where('id', $id)
@@ -530,6 +657,134 @@ class CargosController extends Controller
                 'message' => 'Erro ao excluir cargo.',
                 'error' => $e->getMessage(),
             ], 500);
+        }
+    }
+
+    private function sincronizarFiliais(int $cargoId, array $filiaisIds): void
+    {
+        foreach ($filiaisIds as $filialId) {
+            DB::table('vinculo_cargo_x_filial')->insert([
+                'cargo_id' => $cargoId,
+                'filial_id' => $filialId,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+        }
+    }
+
+    private function sincronizarSetores(int $cargoId, array $setoresIds): void
+    {
+        foreach ($setoresIds as $setorId) {
+            DB::table('vinculo_cargo_x_setor')->insert([
+                'cargo_id' => $cargoId,
+                'setor_id' => $setorId,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+        }
+    }
+
+    private function sincronizarRiscos(int $cargoId, array $riscosIds): void
+    {
+        foreach ($riscosIds as $riscoId) {
+            DB::table('vinculo_cargo_x_risco')->insert([
+                'cargo_id' => $cargoId,
+                'risco_id' => $riscoId,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+        }
+    }
+
+    private function sincronizarResponsabilidades(int $cargoId, array $responsabilidadesIds): void
+    {
+        foreach ($responsabilidadesIds as $responsabilidadeId) {
+            DB::table('vinculo_cargo_x_responsabilidade')->insert([
+                'cargo_id' => $cargoId,
+                'responsabilidade_id' => $responsabilidadeId,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+        }
+    }
+
+    private function sincronizarCompetencias(int $cargoId, array $payload): void
+    {
+        foreach ($payload as $item) {
+            $competenciaId = isset($item['competencia_id']) ? (int) $item['competencia_id'] : 0;
+            $nota = $item['nota'] ?? null;
+
+            if (!$competenciaId) {
+                continue;
+            }
+
+            DB::table('vinculo_cargo_x_competencia')->insert([
+                'cargo_id' => $cargoId,
+                'competencia_id' => $competenciaId,
+                'nota' => $nota !== '' && $nota !== null ? (int) $nota : null,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+        }
+    }
+
+    private function sincronizarFormacoes(int $cargoId, array $payload): void
+    {
+        foreach ($payload as $item) {
+            $formacaoId = isset($item['formacao_id']) ? (int) $item['formacao_id'] : 0;
+            $tipo = $item['tipo'] ?? null;
+
+            if (!$formacaoId || !in_array($tipo, ['desejado', 'obrigatorio'])) {
+                continue;
+            }
+
+            DB::table('vinculo_cargo_x_formacao')->insert([
+                'cargo_id' => $cargoId,
+                'formacao_id' => $formacaoId,
+                'tipo' => $tipo,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+        }
+    }
+
+    private function sincronizarCursos(int $cargoId, array $payload): void
+    {
+        foreach ($payload as $item) {
+            $cursoId = isset($item['curso_id']) ? (int) $item['curso_id'] : 0;
+            $tipo = $item['tipo'] ?? null;
+
+            if (!$cursoId || !in_array($tipo, ['desejado', 'obrigatorio'])) {
+                continue;
+            }
+
+            DB::table('vinculo_cargo_x_curso')->insert([
+                'cargo_id' => $cargoId,
+                'curso_id' => $cursoId,
+                'tipo' => $tipo,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+        }
+    }
+
+    private function sincronizarEscolaridades(int $cargoId, array $payload): void
+    {
+        foreach ($payload as $item) {
+            $escolaridadeId = isset($item['escolaridade_id']) ? (int) $item['escolaridade_id'] : 0;
+            $tipo = $item['tipo'] ?? null;
+
+            if (!$escolaridadeId || !in_array($tipo, ['desejado', 'obrigatorio'])) {
+                continue;
+            }
+
+            DB::table('vinculo_cargo_x_escolaridade')->insert([
+                'cargo_id' => $cargoId,
+                'escolaridade_id' => $escolaridadeId,
+                'tipo' => $tipo,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
         }
     }
 
@@ -561,6 +816,30 @@ class CargosController extends Controller
             ->all();
 
         return empty(array_diff($setoresIds, $setoresPermitidos));
+    }
+
+    private function buscarConfiguracaoFluxoCargo()
+    {
+        try {
+            if (!DB::getSchemaBuilder()->hasTable('aprovacao_configuracoes')) {
+                return null;
+            }
+
+            $query = DB::table('aprovacao_configuracoes')
+                ->where('tipo_referencia', 'cargo');
+
+            if (DB::getSchemaBuilder()->hasColumn('aprovacao_configuracoes', 'ativo')) {
+                $query->where('ativo', true);
+            }
+
+            if (DB::getSchemaBuilder()->hasColumn('aprovacao_configuracoes', 'situacao')) {
+                $query->where('situacao', true);
+            }
+
+            return $query->first();
+        } catch (Throwable $e) {
+            return null;
+        }
     }
 
     private function getPermissoes(): array
