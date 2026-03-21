@@ -1,43 +1,17 @@
 @extends('layouts.app')
 
-@section('title', 'Colaboradores')
+@section('title', 'Cristalcopo - Colaboradores')
 
-@section('content')
-<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
-
+@section('styles')
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css">
 <style>
     .select2-container {
         width: 100% !important;
     }
-
-    .select2-container .select2-selection--multiple {
-        min-height: 38px !important;
-        border: 1px solid #d2d6de !important;
-        border-radius: 4px !important;
-        padding: 2px 6px !important;
-        background: #fff !important;
-    }
-
-    .select2-container--default .select2-selection--multiple .select2-selection__rendered {
-        display: block !important;
-        padding: 0 !important;
-        margin: 0 !important;
-    }
-
-    .select2-container--default .select2-selection--multiple .select2-selection__choice {
-        margin-top: 4px !important;
-        margin-right: 4px !important;
-    }
-
-    .select2-container--default .select2-selection--multiple .select2-selection__placeholder {
-        color: #999 !important;
-    }
-
-    .select2-dropdown {
-        z-index: 99999 !important;
-    }
 </style>
+@endsection
 
+@section('content')
 <div class="content-wrapper">
     <div class="container-full">
 
@@ -49,14 +23,16 @@
             </div>
         </div>
 
-        <section class="content">
-            @include('pessoas.colaboradores.partials.filtros')
+        {{-- FILTROS --}}
+        @include('pessoas.colaboradores.partials.filtros')
 
+        <section class="content">
             <div class="row">
                 <div class="col-12">
                     <div class="box">
+
                         <div class="box-header with-border">
-                            <h4 class="box-title">Listagem</h4>
+                            <h4 class="box-title">Colaboradores</h4>
                         </div>
 
                         <div class="box-body">
@@ -67,6 +43,7 @@
                                 ])
                             </div>
                         </div>
+
                     </div>
                 </div>
             </div>
@@ -74,210 +51,124 @@
 
     </div>
 </div>
+@endsection
 
+@section('scripts')
 <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 
 <script>
-document.addEventListener('DOMContentLoaded', function () {
-    let filtroTimeout = null;
+$(document).ready(function () {
 
-    function initSelect2() {
-        const selects = [
-            $('select[name="filiais[]"]'),
-            $('select[name="setores[]"]'),
-            $('select[name="cargos[]"]')
-        ];
+    // ✅ SELECT2 (PADRÃO CARGOS)
+    $('.select2').select2({
+        placeholder: 'Selecione',
+        allowClear: true,
+        width: '100%'
+    });
 
-        selects.forEach(function ($select) {
-            if ($select.length === 0) {
-                return;
-            }
+    let request = null;
+    let debounce = null;
 
-            if ($select.hasClass('select2-hidden-accessible')) {
-                $select.select2('destroy');
-            }
+    function carregarTabela(url = '{{ route('pessoas.colaboradores.index') }}') {
 
-            $select.select2({
-                width: '100%',
-                placeholder: $select.data('placeholder') || 'Selecione',
-                closeOnSelect: false,
-                allowClear: false
-            });
-        });
-    }
+        if (request) {
+            request.abort();
+        }
 
-    function atualizarTabela(url = null) {
-        const form = $('#form-filtros');
-        const targetUrl = url || form.attr('action');
-
-        $.ajax({
-            url: targetUrl,
-            type: 'GET',
-            data: form.serialize(),
-            success: function (html) {
-                $('#resultado-tabela').html(html);
+        request = $.ajax({
+            url: url,
+            method: 'GET',
+            data: $('#form-filtros').serialize(),
+            success: function (response) {
+                $('#resultado-tabela').html(response);
             },
             error: function () {
-                toastr.error('Erro ao atualizar a tabela.');
+                toastr.error('Erro ao carregar colaboradores.');
             }
         });
     }
 
-    function dispararFiltroComDelay() {
-        clearTimeout(filtroTimeout);
-        filtroTimeout = setTimeout(function () {
-            atualizarTabela();
+    // 🔎 TEXTO
+    $('input[name="texto"]').on('keyup', function () {
+        clearTimeout(debounce);
+        debounce = setTimeout(function () {
+            carregarTabela();
         }, 300);
-    }
+    });
 
-    function carregarSetores(callback = null) {
-        const filiais = $('select[name="filiais[]"]').val() || [];
-        const setoresSelecionados = @json($filtros['setores'] ?? []);
-        const $setores = $('select[name="setores[]"]');
-        const $cargos = $('select[name="cargos[]"]');
+    // 📌 SITUAÇÃO
+    $('select[name="situacao"]').on('change', function () {
+        carregarTabela();
+    });
 
-        $setores.prop('disabled', true).empty();
-        $cargos.prop('disabled', true).empty();
+    // 🏢 FILIAIS → SETORES
+    $('select[name="filiais[]"]').on('change', function () {
 
-        if ($setores.hasClass('select2-hidden-accessible')) {
-            $setores.trigger('change');
-        }
-
-        if ($cargos.hasClass('select2-hidden-accessible')) {
-            $cargos.trigger('change');
-        }
-
-        if (filiais.length === 0) {
-            initSelect2();
-            if (typeof callback === 'function') {
-                callback();
-            }
-            return;
-        }
+        let filiais = $(this).val();
 
         $.ajax({
             url: "{{ route('pessoas.colaboradores.setores') }}",
-            type: 'GET',
-            traditional: true,
+            method: 'GET',
             data: { filiais: filiais },
-            success: function (response) {
+            success: function (data) {
+
+                let $setores = $('select[name="setores[]"]');
                 $setores.empty();
 
-                response.forEach(function (item) {
-                    const selected = setoresSelecionados.map(String).includes(String(item.id));
-                    const option = new Option(item.descricao, item.id, false, selected);
-                    $setores.append(option);
+                data.forEach(function (item) {
+                    $setores.append(new Option(item.descricao, item.id));
                 });
 
-                $setores.prop('disabled', false);
-                initSelect2();
+                $setores.trigger('change');
 
-                if (typeof callback === 'function') {
-                    callback();
-                }
+                carregarTabela();
             },
             error: function () {
                 toastr.error('Erro ao carregar setores.');
             }
         });
-    }
+    });
 
-    function carregarCargos(callback = null) {
-        const setores = $('select[name="setores[]"]').val() || [];
-        const cargosSelecionados = @json($filtros['cargos'] ?? []);
-        const $cargos = $('select[name="cargos[]"]');
+    // 🧩 SETORES → CARGOS
+    $('select[name="setores[]"]').on('change', function () {
 
-        $cargos.prop('disabled', true).empty();
-
-        if ($cargos.hasClass('select2-hidden-accessible')) {
-            $cargos.trigger('change');
-        }
-
-        if (setores.length === 0) {
-            initSelect2();
-            if (typeof callback === 'function') {
-                callback();
-            }
-            return;
-        }
+        let setores = $(this).val();
 
         $.ajax({
             url: "{{ route('pessoas.colaboradores.cargos') }}",
-            type: 'GET',
-            traditional: true,
+            method: 'GET',
             data: { setores: setores },
-            success: function (response) {
+            success: function (data) {
+
+                let $cargos = $('select[name="cargos[]"]');
                 $cargos.empty();
 
-                response.forEach(function (item) {
-                    const selected = cargosSelecionados.map(String).includes(String(item.id));
-                    const option = new Option(item.titulo_cargo, item.id, false, selected);
-                    $cargos.append(option);
+                data.forEach(function (item) {
+                    $cargos.append(new Option(item.titulo_cargo, item.id));
                 });
 
-                $cargos.prop('disabled', false);
-                initSelect2();
+                $cargos.trigger('change');
 
-                if (typeof callback === 'function') {
-                    callback();
-                }
+                carregarTabela();
             },
             error: function () {
                 toastr.error('Erro ao carregar cargos.');
             }
         });
-    }
-
-    initSelect2();
-
-    const filiaisIniciais = $('select[name="filiais[]"]').val() || [];
-    if (filiaisIniciais.length > 0) {
-        carregarSetores(function () {
-            const setoresIniciais = $('select[name="setores[]"]').val() || [];
-            if (setoresIniciais.length > 0) {
-                carregarCargos();
-            }
-        });
-    } else {
-        $('select[name="setores[]"]').prop('disabled', true);
-        $('select[name="cargos[]"]').prop('disabled', true);
-        initSelect2();
-    }
-
-    $('#form-filtros').on('input', 'input[name="texto"]', function () {
-        dispararFiltroComDelay();
     });
 
-    $('#form-filtros').on('change', 'select[name="situacao"]', function () {
-        dispararFiltroComDelay();
+    // 🧾 CARGOS
+    $('select[name="cargos[]"]').on('change', function () {
+        carregarTabela();
     });
 
-    $('#form-filtros').on('change', 'select[name="filiais[]"]', function () {
-        $('select[name="setores[]"]').empty().trigger('change');
-        $('select[name="cargos[]"]').empty().trigger('change');
-
-        carregarSetores(function () {
-            dispararFiltroComDelay();
-        });
-    });
-
-    $('#form-filtros').on('change', 'select[name="setores[]"]', function () {
-        $('select[name="cargos[]"]').empty().trigger('change');
-
-        carregarCargos(function () {
-            dispararFiltroComDelay();
-        });
-    });
-
-    $('#form-filtros').on('change', 'select[name="cargos[]"]', function () {
-        dispararFiltroComDelay();
-    });
-
+    // 📄 PAGINAÇÃO AJAX
     $(document).on('click', '#resultado-tabela .pagination a', function (e) {
         e.preventDefault();
-        atualizarTabela($(this).attr('href'));
+        carregarTabela($(this).attr('href'));
     });
 
+    // 🗑️ EXCLUSÃO (SWEETALERT PADRÃO)
     $(document).on('click', '.btn-excluir-colaborador', function (e) {
         e.preventDefault();
 
@@ -285,7 +176,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
         swal({
             title: 'Excluir colaborador?',
-            text: 'Esta ação fará exclusão lógica do registro.',
+            text: 'Esta ação fará a exclusão lógica do registro.',
             type: 'warning',
             showCancelButton: true,
             confirmButtonColor: '#3085d6',
@@ -298,6 +189,7 @@ document.addEventListener('DOMContentLoaded', function () {
             }
         });
     });
+
 });
 </script>
 @endsection
