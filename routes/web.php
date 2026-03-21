@@ -20,6 +20,9 @@ use App\Http\Controllers\Cargos\CursosController;
 
 use App\Http\Controllers\Sst\RiscosController;
 
+use App\Http\Controllers\Pessoas\Colaboradores\ColaboradoresController;
+use App\Http\Controllers\Configuracao\Importar\ImportarColaboradoresController;
+
 /*
 |--------------------------------------------------------------------------
 | HOME
@@ -266,7 +269,7 @@ Route::middleware(['auth', 'user.active'])->group(function () {
             Route::delete('/delete/{id}', [FormacoesController::class, 'delete'])->name('delete');
     });
     
-     /*
+    /*
     |--------------------------------------------------------------------------
     | CARGOS - CURSOS
     |--------------------------------------------------------------------------
@@ -281,6 +284,32 @@ Route::middleware(['auth', 'user.active'])->group(function () {
             Route::get('/edit/{id}', [CursosController::class, 'edit'])->name('edit');
             Route::post('/update/{id}', [CursosController::class, 'update'])->name('update');
             Route::delete('/delete/{id}', [CursosController::class, 'delete'])->name('delete');
+    });
+    
+    /*
+    |--------------------------------------------------------------------------
+    | PESSOAS - COLABORADORES
+    |--------------------------------------------------------------------------
+    */
+    Route::middleware(['auth', 'screen:pessoas/colaboradores'])->group(function () {
+        Route::get('/pessoas/colaboradores', [ColaboradoresController::class, 'index'])
+            ->name('pessoas.colaboradores.index');
+    
+        Route::delete('/pessoas/colaboradores/{colaborador}', [ColaboradoresController::class, 'destroy'])
+            ->name('pessoas.colaboradores.destroy');
+    });
+    
+    /*
+    |--------------------------------------------------------------------------
+    | CONFIGURAÇÃO - IMPORTAR PESSOAS
+    |--------------------------------------------------------------------------
+    */
+    Route::middleware(['auth', 'screen:configuracao/importar'])->group(function () {
+        Route::get('/configuracao/importar', [ImportarColaboradoresController::class, 'index'])
+            ->name('configuracao.importar.index');
+    
+        Route::post('/configuracao/importar', [ImportarColaboradoresController::class, 'store'])
+            ->name('configuracao.importar.store');
     });
     
 });
