@@ -135,12 +135,6 @@ class CargosController extends Controller
             ->select('id', 'nome_fantasia')
             ->get();
 
-        $setores = DB::table('empresa_setores')
-            ->whereNull('deleted_at')
-            ->orderBy('descricao')
-            ->select('id', 'descricao')
-            ->get();
-
         $cbos = DB::table('cargos_cbo')
             ->whereNull('deleted_at')
             ->orderBy('codigo_cbo')
@@ -149,11 +143,14 @@ class CargosController extends Controller
 
         $cargo = null;
 
+        $filiaisSelecionadas = array_map('intval', old('filiais', []));
+        $setoresDisponiveis = $this->buscarSetoresPorFiliaisIds($filiaisSelecionadas);
+
         return view('cargos.cargos.form', compact(
             'cargo',
             'filiais',
-            'setores',
             'cbos',
+            'setoresDisponiveis',
             'permissoes'
         ));
     }
@@ -177,12 +174,6 @@ class CargosController extends Controller
             ->select('id', 'nome_fantasia')
             ->get();
 
-        $setores = DB::table('empresa_setores')
-            ->whereNull('deleted_at')
-            ->orderBy('descricao')
-            ->select('id', 'descricao')
-            ->get();
-
         $cbos = DB::table('cargos_cbo')
             ->whereNull('deleted_at')
             ->orderBy('codigo_cbo')
@@ -192,20 +183,46 @@ class CargosController extends Controller
         $cargo->filiais = DB::table('vinculo_cargo_x_filial')
             ->where('cargo_id', $id)
             ->pluck('filial_id')
+            ->map(fn ($item) => (int) $item)
             ->toArray();
 
         $cargo->setores = DB::table('vinculo_cargo_x_setor')
             ->where('cargo_id', $id)
             ->pluck('setor_id')
+            ->map(fn ($item) => (int) $item)
             ->toArray();
+
+        $filiaisSelecionadas = array_map('intval', old('filiais', $cargo->filiais ?? []));
+        $setoresDisponiveis = $this->buscarSetoresPorFiliaisIds($filiaisSelecionadas);
 
         return view('cargos.cargos.form', compact(
             'cargo',
             'filiais',
-            'setores',
             'cbos',
+            'setoresDisponiveis',
             'permissoes'
         ));
+    }
+
+    public function setoresPorFiliais(Request $request)
+    {
+        $permissoes = $this->getPermissoes();
+
+        abort_unless($permissoes['pode_ler'], 403);
+
+        $filiais = collect((array) $request->filiais)
+            ->filter()
+            ->map(fn ($item) => (int) $item)
+            ->unique()
+            ->values()
+            ->all();
+
+        $setores = $this->buscarSetoresPorFiliaisIds($filiais);
+
+        return response()->json([
+            'success' => true,
+            'data' => $setores,
+        ]);
     }
 
     public function show($id)
@@ -280,20 +297,22 @@ class CargosController extends Controller
             'conta_base_jovem_aprendiz' => ['nullable'],
         ]);
 
+        $filiaisIds = collect((array) $request->filiais)->map(fn ($item) => (int) $item)->all();
+        $setoresIds = collect((array) $request->setores)->map(fn ($item) => (int) $item)->all();
+
+        if (!$this->setoresPertencemAsFiliais($filiaisIds, $setoresIds)) {
+            return redirect()
+                ->back()
+                ->withInput()
+                ->with('error', 'Selecione apenas setores vinculados às filiais informadas.');
+        }
+
         try {
             DB::beginTransaction();
 
-            $statusAprovacao = 'rascunho';
+            $fluxoAprovacaoId = $this->obterFluxoAprovacaoCargoId();
+            $statusAprovacao = $fluxoAprovacaoId ? 'pendente_aprovacao' : 'rascunho';
             $aprovacaoSolicitacaoId = null;
-
-            $configuracaoFluxo = DB::table('aprovacao_configuracao')
-                ->where('tipo_referencia', 'cargo')
-                ->where('situacao', true)
-                ->first();
-
-            if ($configuracaoFluxo) {
-                $statusAprovacao = 'pendente_aprovacao';
-            }
 
             $cargoId = DB::table('cargos')->insertGetId([
                 'titulo_cargo' => trim($request->titulo_cargo),
@@ -306,7 +325,7 @@ class CargosController extends Controller
                 'updated_at' => now(),
             ]);
 
-            foreach ($request->filiais as $filialId) {
+            foreach ($filiaisIds as $filialId) {
                 DB::table('vinculo_cargo_x_filial')->insert([
                     'cargo_id' => $cargoId,
                     'filial_id' => $filialId,
@@ -315,7 +334,7 @@ class CargosController extends Controller
                 ]);
             }
 
-            foreach ($request->setores as $setorId) {
+            foreach ($setoresIds as $setorId) {
                 DB::table('vinculo_cargo_x_setor')->insert([
                     'cargo_id' => $cargoId,
                     'setor_id' => $setorId,
@@ -328,7 +347,7 @@ class CargosController extends Controller
 
             return redirect()
                 ->route('cargos.cargos.edit', $cargoId)
-                ->with('success', $configuracaoFluxo
+                ->with('success', $fluxoAprovacaoId
                     ? 'Cargo salvo com sucesso e enviado para aprovação.'
                     : 'Cargo salvo com sucesso.');
         } catch (Throwable $e) {
@@ -358,6 +377,16 @@ class CargosController extends Controller
             'conta_base_jovem_aprendiz' => ['nullable'],
         ]);
 
+        $filiaisIds = collect((array) $request->filiais)->map(fn ($item) => (int) $item)->all();
+        $setoresIds = collect((array) $request->setores)->map(fn ($item) => (int) $item)->all();
+
+        if (!$this->setoresPertencemAsFiliais($filiaisIds, $setoresIds)) {
+            return redirect()
+                ->back()
+                ->withInput()
+                ->with('error', 'Selecione apenas setores vinculados às filiais informadas.');
+        }
+
         try {
             DB::beginTransaction();
 
@@ -373,7 +402,7 @@ class CargosController extends Controller
                 ]);
 
             DB::table('vinculo_cargo_x_filial')->where('cargo_id', $id)->delete();
-            foreach ($request->filiais as $filialId) {
+            foreach ($filiaisIds as $filialId) {
                 DB::table('vinculo_cargo_x_filial')->insert([
                     'cargo_id' => $id,
                     'filial_id' => $filialId,
@@ -383,7 +412,7 @@ class CargosController extends Controller
             }
 
             DB::table('vinculo_cargo_x_setor')->where('cargo_id', $id)->delete();
-            foreach ($request->setores as $setorId) {
+            foreach ($setoresIds as $setorId) {
                 DB::table('vinculo_cargo_x_setor')->insert([
                     'cargo_id' => $id,
                     'setor_id' => $setorId,
@@ -440,6 +469,59 @@ class CargosController extends Controller
                 'message' => 'Erro ao excluir cargo.',
                 'error' => $e->getMessage(),
             ], 500);
+        }
+    }
+
+    private function buscarSetoresPorFiliaisIds(array $filiaisIds)
+    {
+        if (empty($filiaisIds)) {
+            return collect();
+        }
+
+        return DB::table('vinculo_filial_x_setor as vfs')
+            ->join('empresa_setores as s', 's.id', '=', 'vfs.setor_id')
+            ->whereIn('vfs.filial_id', $filiaisIds)
+            ->whereNull('s.deleted_at')
+            ->select('s.id', 's.descricao')
+            ->distinct()
+            ->orderBy('s.descricao')
+            ->get();
+    }
+
+    private function setoresPertencemAsFiliais(array $filiaisIds, array $setoresIds): bool
+    {
+        if (empty($filiaisIds) || empty($setoresIds)) {
+            return false;
+        }
+
+        $setoresPermitidos = $this->buscarSetoresPorFiliaisIds($filiaisIds)
+            ->pluck('id')
+            ->map(fn ($item) => (int) $item)
+            ->all();
+
+        return empty(array_diff($setoresIds, $setoresPermitidos));
+    }
+
+    private function obterFluxoAprovacaoCargoId(): ?int
+    {
+        try {
+            $schema = DB::getSchemaBuilder();
+
+            if (!$schema->hasTable('gestao_configuracao')) {
+                return null;
+            }
+
+            if ($schema->hasColumns('gestao_configuracao', ['chave', 'valor'])) {
+                $valor = DB::table('gestao_configuracao')
+                    ->where('chave', 'fluxo_aprovacao_cargo_id')
+                    ->value('valor');
+
+                return filled($valor) ? (int) $valor : null;
+            }
+
+            return null;
+        } catch (Throwable $e) {
+            return null;
         }
     }
 
