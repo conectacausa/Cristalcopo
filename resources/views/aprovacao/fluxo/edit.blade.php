@@ -205,38 +205,21 @@
                                                         <div class="col-md-4">
                                                             <div class="form-group">
                                                                 <label class="form-label">Nome da Etapa *</label>
-                                                                <input
-                                                                    type="text"
-                                                                    name="etapas[{{ $i }}][nome_etapa]"
-                                                                    class="form-control"
-                                                                    value="{{ $etapaOld['nome_etapa'] ?? '' }}"
-                                                                    required
-                                                                >
+                                                                <input type="text" name="etapas[{{ $i }}][nome_etapa]" class="form-control" value="{{ $etapaOld['nome_etapa'] ?? '' }}" required>
                                                             </div>
                                                         </div>
 
                                                         <div class="col-md-2">
                                                             <div class="form-group">
                                                                 <label class="form-label">Ordem *</label>
-                                                                <input
-                                                                    type="number"
-                                                                    name="etapas[{{ $i }}][ordem]"
-                                                                    class="form-control ordem-etapa"
-                                                                    value="{{ $etapaOld['ordem'] ?? ($loop->iteration) }}"
-                                                                    min="1"
-                                                                    required
-                                                                >
+                                                                <input type="number" name="etapas[{{ $i }}][ordem]" class="form-control ordem-etapa" value="{{ $etapaOld['ordem'] ?? ($loop->iteration) }}" min="1" required>
                                                             </div>
                                                         </div>
 
                                                         <div class="col-md-3">
                                                             <div class="form-group">
                                                                 <label class="form-label">Tipo de Aprovação *</label>
-                                                                <select
-                                                                    name="etapas[{{ $i }}][tipo_aprovacao_etapa]"
-                                                                    class="form-select tipo-aprovacao-etapa"
-                                                                    required
-                                                                >
+                                                                <select name="etapas[{{ $i }}][tipo_aprovacao_etapa]" class="form-select tipo-aprovacao-etapa" required>
                                                                     <option value="unanimidade" {{ ($etapaOld['tipo_aprovacao_etapa'] ?? '') === 'unanimidade' ? 'selected' : '' }}>Unanimidade</option>
                                                                     <option value="qualquer_um" {{ ($etapaOld['tipo_aprovacao_etapa'] ?? '') === 'qualquer_um' ? 'selected' : '' }}>Qualquer um</option>
                                                                     <option value="maioria" {{ ($etapaOld['tipo_aprovacao_etapa'] ?? '') === 'maioria' ? 'selected' : '' }}>Maioria</option>
@@ -247,29 +230,16 @@
                                                         <div class="col-md-3 campo-quantidade-minima" {{ ($etapaOld['tipo_aprovacao_etapa'] ?? '') === 'maioria' ? '' : 'style=display:none;' }}>
                                                             <div class="form-group">
                                                                 <label class="form-label">Qtd. Mínima Aprovação</label>
-                                                                <input
-                                                                    type="number"
-                                                                    name="etapas[{{ $i }}][quantidade_minima_aprovacao]"
-                                                                    class="form-control"
-                                                                    min="1"
-                                                                    value="{{ $etapaOld['quantidade_minima_aprovacao'] ?? '' }}"
-                                                                >
+                                                                <input type="number" name="etapas[{{ $i }}][quantidade_minima_aprovacao]" class="form-control" min="1" value="{{ $etapaOld['quantidade_minima_aprovacao'] ?? '' }}">
                                                             </div>
                                                         </div>
 
                                                         <div class="col-md-12">
                                                             <div class="form-group">
                                                                 <label class="form-label">Aprovadores *</label>
-                                                                <select
-                                                                    name="etapas[{{ $i }}][aprovadores][]"
-                                                                    class="form-select select-aprovadores"
-                                                                    multiple
-                                                                    required
-                                                                    data-placeholder="Selecione os aprovadores"
-                                                                >
+                                                                <select name="etapas[{{ $i }}][aprovadores][]" class="form-select select-aprovadores" multiple required data-placeholder="Selecione os aprovadores">
                                                                     @foreach($colaboradores as $colaborador)
-                                                                        <option value="{{ $colaborador->id }}"
-                                                                            {{ in_array($colaborador->id, $etapaOld['aprovadores'] ?? []) ? 'selected' : '' }}>
+                                                                        <option value="{{ $colaborador->id }}" {{ in_array($colaborador->id, $etapaOld['aprovadores'] ?? []) ? 'selected' : '' }}>
                                                                             {{ $colaborador->nome_completo }}
                                                                         </option>
                                                                     @endforeach
@@ -294,38 +264,21 @@
                                                         <div class="col-md-4">
                                                             <div class="form-group">
                                                                 <label class="form-label">Nome da Etapa *</label>
-                                                                <input
-                                                                    type="text"
-                                                                    name="etapas[{{ $i }}][nome_etapa]"
-                                                                    class="form-control"
-                                                                    value="{{ $etapa->nome_etapa }}"
-                                                                    required
-                                                                >
+                                                                <input type="text" name="etapas[{{ $i }}][nome_etapa]" class="form-control" value="{{ $etapa->nome_etapa }}" required>
                                                             </div>
                                                         </div>
 
                                                         <div class="col-md-2">
                                                             <div class="form-group">
                                                                 <label class="form-label">Ordem *</label>
-                                                                <input
-                                                                    type="number"
-                                                                    name="etapas[{{ $i }}][ordem]"
-                                                                    class="form-control ordem-etapa"
-                                                                    value="{{ $etapa->ordem }}"
-                                                                    min="1"
-                                                                    required
-                                                                >
+                                                                <input type="number" name="etapas[{{ $i }}][ordem]" class="form-control ordem-etapa" value="{{ $etapa->ordem }}" min="1" required>
                                                             </div>
                                                         </div>
 
                                                         <div class="col-md-3">
                                                             <div class="form-group">
                                                                 <label class="form-label">Tipo de Aprovação *</label>
-                                                                <select
-                                                                    name="etapas[{{ $i }}][tipo_aprovacao_etapa]"
-                                                                    class="form-select tipo-aprovacao-etapa"
-                                                                    required
-                                                                >
+                                                                <select name="etapas[{{ $i }}][tipo_aprovacao_etapa]" class="form-select tipo-aprovacao-etapa" required>
                                                                     <option value="unanimidade" {{ $etapa->tipo_aprovacao_etapa === 'unanimidade' ? 'selected' : '' }}>Unanimidade</option>
                                                                     <option value="qualquer_um" {{ $etapa->tipo_aprovacao_etapa === 'qualquer_um' ? 'selected' : '' }}>Qualquer um</option>
                                                                     <option value="maioria" {{ $etapa->tipo_aprovacao_etapa === 'maioria' ? 'selected' : '' }}>Maioria</option>
@@ -336,33 +289,20 @@
                                                         <div class="col-md-3 campo-quantidade-minima" {{ $etapa->tipo_aprovacao_etapa === 'maioria' ? '' : 'style=display:none;' }}>
                                                             <div class="form-group">
                                                                 <label class="form-label">Qtd. Mínima Aprovação</label>
-                                                                <input
-                                                                    type="number"
-                                                                    name="etapas[{{ $i }}][quantidade_minima_aprovacao]"
-                                                                    class="form-control"
-                                                                    min="1"
-                                                                    value="{{ $etapa->quantidade_minima_aprovacao }}"
-                                                                >
+                                                                <input type="number" name="etapas[{{ $i }}][quantidade_minima_aprovacao]" class="form-control" min="1" value="{{ $etapa->quantidade_minima_aprovacao }}">
                                                             </div>
                                                         </div>
 
                                                         <div class="col-md-12">
                                                             <div class="form-group">
                                                                 <label class="form-label">Aprovadores *</label>
-                                                                <select
-                                                                    name="etapas[{{ $i }}][aprovadores][]"
-                                                                    class="form-select select-aprovadores"
-                                                                    multiple
-                                                                    required
-                                                                    data-placeholder="Selecione os aprovadores"
-                                                                >
+                                                                <select name="etapas[{{ $i }}][aprovadores][]" class="form-select select-aprovadores" multiple required data-placeholder="Selecione os aprovadores">
                                                                     @php
                                                                         $idsSelecionados = $etapa->aprovadores->pluck('colaborador_id')->toArray();
                                                                     @endphp
 
                                                                     @foreach($colaboradores as $colaborador)
-                                                                        <option value="{{ $colaborador->id }}"
-                                                                            {{ in_array($colaborador->id, $idsSelecionados) ? 'selected' : '' }}>
+                                                                        <option value="{{ $colaborador->id }}" {{ in_array($colaborador->id, $idsSelecionados) ? 'selected' : '' }}>
                                                                             {{ $colaborador->nome_completo }}
                                                                         </option>
                                                                     @endforeach
@@ -401,6 +341,15 @@
 <script src="{{ asset('assets/js/template.js') }}"></script>
 <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
+
+<script>
+    toastr.options = {
+        closeButton: true,
+        progressBar: true,
+        positionClass: "toast-top-right",
+        timeOut: "4000"
+    };
+</script>
 
 @if(session('success'))
     <script>
@@ -497,37 +446,21 @@
                     <div class="col-md-4">
                         <div class="form-group">
                             <label class="form-label">Nome da Etapa *</label>
-                            <input
-                                type="text"
-                                name="etapas[${etapaIndex}][nome_etapa]"
-                                class="form-control"
-                                required
-                            >
+                            <input type="text" name="etapas[${etapaIndex}][nome_etapa]" class="form-control" required>
                         </div>
                     </div>
 
                     <div class="col-md-2">
                         <div class="form-group">
                             <label class="form-label">Ordem *</label>
-                            <input
-                                type="number"
-                                name="etapas[${etapaIndex}][ordem]"
-                                class="form-control ordem-etapa"
-                                value="${etapaIndex + 1}"
-                                min="1"
-                                required
-                            >
+                            <input type="number" name="etapas[${etapaIndex}][ordem]" class="form-control ordem-etapa" value="${etapaIndex + 1}" min="1" required>
                         </div>
                     </div>
 
                     <div class="col-md-3">
                         <div class="form-group">
                             <label class="form-label">Tipo de Aprovação *</label>
-                            <select
-                                name="etapas[${etapaIndex}][tipo_aprovacao_etapa]"
-                                class="form-select tipo-aprovacao-etapa"
-                                required
-                            >
+                            <select name="etapas[${etapaIndex}][tipo_aprovacao_etapa]" class="form-select tipo-aprovacao-etapa" required>
                                 <option value="unanimidade">Unanimidade</option>
                                 <option value="qualquer_um">Qualquer um</option>
                                 <option value="maioria">Maioria</option>
@@ -538,30 +471,17 @@
                     <div class="col-md-3 campo-quantidade-minima" style="display:none;">
                         <div class="form-group">
                             <label class="form-label">Qtd. Mínima Aprovação</label>
-                            <input
-                                type="number"
-                                name="etapas[${etapaIndex}][quantidade_minima_aprovacao]"
-                                class="form-control"
-                                min="1"
-                            >
+                            <input type="number" name="etapas[${etapaIndex}][quantidade_minima_aprovacao]" class="form-control" min="1">
                         </div>
                     </div>
 
                     <div class="col-md-12">
                         <div class="form-group">
                             <label class="form-label">Aprovadores *</label>
-                            <select
-                                name="etapas[${etapaIndex}][aprovadores][]"
-                                class="form-select select-aprovadores"
-                                multiple
-                                required
-                                data-placeholder="Selecione os aprovadores"
-                            >
+                            <select name="etapas[${etapaIndex}][aprovadores][]" class="form-select select-aprovadores" multiple required data-placeholder="Selecione os aprovadores">
                                 ${getColaboradoresOptions()}
                             </select>
-                            <small class="text-muted">
-                                Pesquise e selecione um ou mais aprovadores.
-                            </small>
+                            <small class="text-muted">Pesquise e selecione um ou mais aprovadores.</small>
                         </div>
                     </div>
                 </div>
@@ -580,39 +500,11 @@
     });
 
     $(document).ready(function() {
-        bindEventosEtapa($(document));
         inicializarSelectBusca($(document));
+        bindEventosEtapa($(document));
         atualizarTitulosEtapas();
     });
 </script>
-<script>
-    toastr.options = {
-        "closeButton": true,
-        "progressBar": true,
-        "positionClass": "toast-top-right",
-        "timeOut": "4000"
-    };
-</script>
-
-@if(session('success'))
-<script>
-    toastr.success(@json(session('success')));
-</script>
-@endif
-
-@if(session('error'))
-<script>
-    toastr.error(@json(session('error')));
-</script>
-@endif
-
-@if ($errors->any())
-<script>
-    @foreach ($errors->all() as $error)
-        toastr.error(@json($error));
-    @endforeach
-</script>
-@endif
 
 </body>
 </html>
