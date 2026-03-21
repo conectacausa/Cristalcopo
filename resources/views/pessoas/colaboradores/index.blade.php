@@ -15,7 +15,6 @@
         </div>
 
         <section class="content">
-
             @include('pessoas.colaboradores.partials.filtros')
 
             <div class="row">
@@ -36,8 +35,8 @@
                     </div>
                 </div>
             </div>
-
         </section>
+
     </div>
 </div>
 @endsection
@@ -51,23 +50,28 @@
 
     .select2-container .select2-selection--multiple {
         min-height: 38px !important;
-        border: 1px solid #ced4da !important;
-        border-radius: 0.25rem !important;
+        border: 1px solid #d2d6de !important;
+        border-radius: 4px !important;
         padding: 2px 6px !important;
+    }
+
+    .select2-container--default .select2-selection--multiple .select2-selection__rendered {
+        display: block !important;
+        white-space: normal !important;
+        padding-top: 2px !important;
     }
 
     .select2-container--default .select2-selection--multiple .select2-selection__choice {
         margin-top: 4px !important;
     }
 
-    .select2-container--default.select2-container--focus .select2-selection--multiple {
-        border-color: #80bdff !important;
+    .select2-container--default .select2-selection--multiple .select2-selection__placeholder {
+        color: #999 !important;
     }
 </style>
 @endpush
 
 @push('scripts')
-<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 
 <script>
@@ -75,25 +79,17 @@ $(document).ready(function () {
     let filtroTimeout = null;
 
     function iniciarSelect2() {
-        $('select[name="filiais[]"]').select2({
-            width: '100%',
-            placeholder: 'Selecione as filiais',
-            allowClear: true,
-            closeOnSelect: false
-        });
+        $('select.select2').each(function () {
+            if ($(this).hasClass('select2-hidden-accessible')) {
+                $(this).select2('destroy');
+            }
 
-        $('select[name="setores[]"]').select2({
-            width: '100%',
-            placeholder: 'Selecione os setores',
-            allowClear: true,
-            closeOnSelect: false
-        });
-
-        $('select[name="cargos[]"]').select2({
-            width: '100%',
-            placeholder: 'Selecione os cargos',
-            allowClear: true,
-            closeOnSelect: false
+            $(this).select2({
+                width: '100%',
+                placeholder: $(this).data('placeholder') || 'Selecione',
+                allowClear: false,
+                closeOnSelect: false
+            });
         });
     }
 
@@ -109,36 +105,42 @@ $(document).ready(function () {
                 $('#resultado-tabela').html(html);
             },
             error: function () {
-                toastr.error('Erro ao atualizar tabela.');
+                toastr.error('Erro ao atualizar a tabela.');
             }
         });
     }
 
     function carregarSetores(callback = null) {
         const filiais = $('select[name="filiais[]"]').val() || [];
+        const setoresSelecionados = @json($filtros['setores'] ?? []);
         const $setores = $('select[name="setores[]"]');
+        const $cargos = $('select[name="cargos[]"]');
 
         $setores.prop('disabled', true).empty().trigger('change');
+        $cargos.prop('disabled', true).empty().trigger('change');
 
         if (filiais.length === 0) {
-            $('select[name="cargos[]"]').prop('disabled', true).empty().trigger('change');
-            if (typeof callback === 'function') callback();
+            if (typeof callback === 'function') {
+                callback();
+            }
             return;
         }
 
         $.ajax({
             url: "{{ route('pessoas.colaboradores.setores') }}",
             method: 'GET',
+            traditional: true,
             data: { filiais: filiais },
             success: function (response) {
                 $setores.empty();
 
                 response.forEach(function (item) {
-                    const option = new Option(item.descricao, item.id, false, false);
+                    const selected = setoresSelecionados.map(String).includes(String(item.id));
+                    const option = new Option(item.descricao, item.id, false, selected);
                     $setores.append(option);
                 });
 
-                $setores.prop('disabled', false).trigger('change');
+                $setores.prop('disabled', false).trigger('change.select2');
 
                 if (typeof callback === 'function') {
                     callback();
@@ -152,28 +154,33 @@ $(document).ready(function () {
 
     function carregarCargos(callback = null) {
         const setores = $('select[name="setores[]"]').val() || [];
+        const cargosSelecionados = @json($filtros['cargos'] ?? []);
         const $cargos = $('select[name="cargos[]"]');
 
         $cargos.prop('disabled', true).empty().trigger('change');
 
         if (setores.length === 0) {
-            if (typeof callback === 'function') callback();
+            if (typeof callback === 'function') {
+                callback();
+            }
             return;
         }
 
         $.ajax({
             url: "{{ route('pessoas.colaboradores.cargos') }}",
             method: 'GET',
+            traditional: true,
             data: { setores: setores },
             success: function (response) {
                 $cargos.empty();
 
                 response.forEach(function (item) {
-                    const option = new Option(item.titulo_cargo, item.id, false, false);
+                    const selected = cargosSelecionados.map(String).includes(String(item.id));
+                    const option = new Option(item.titulo_cargo, item.id, false, selected);
                     $cargos.append(option);
                 });
 
-                $cargos.prop('disabled', false).trigger('change');
+                $cargos.prop('disabled', false).trigger('change.select2');
 
                 if (typeof callback === 'function') {
                     callback();
@@ -194,8 +201,18 @@ $(document).ready(function () {
 
     iniciarSelect2();
 
-    $('select[name="setores[]"]').prop('disabled', true);
-    $('select[name="cargos[]"]').prop('disabled', true);
+    const filiaisIniciais = $('select[name="filiais[]"]').val() || [];
+    if (filiaisIniciais.length > 0) {
+        carregarSetores(function () {
+            const setoresIniciais = $('select[name="setores[]"]').val() || [];
+            if (setoresIniciais.length > 0) {
+                carregarCargos();
+            }
+        });
+    } else {
+        $('select[name="setores[]"]').prop('disabled', true);
+        $('select[name="cargos[]"]').prop('disabled', true);
+    }
 
     $('#form-filtros').on('input', 'input[name="texto"]', function () {
         dispararFiltroComDelay();
@@ -206,13 +223,17 @@ $(document).ready(function () {
     });
 
     $('#form-filtros').on('change', 'select[name="filiais[]"]', function () {
+        $('select[name="setores[]"]').empty().trigger('change');
+        $('select[name="cargos[]"]').empty().trigger('change');
+
         carregarSetores(function () {
-            $('select[name="cargos[]"]').prop('disabled', true).empty().trigger('change');
             dispararFiltroComDelay();
         });
     });
 
     $('#form-filtros').on('change', 'select[name="setores[]"]', function () {
+        $('select[name="cargos[]"]').empty().trigger('change');
+
         carregarCargos(function () {
             dispararFiltroComDelay();
         });
