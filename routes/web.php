@@ -13,6 +13,11 @@ use App\Http\Controllers\Aprovacao\FluxoAprovacaoController;
 use App\Http\Controllers\Aprovacao\ConfiguracaoFluxoController;
 
 use App\Http\Controllers\Cargos\CargosController;
+use App\Http\Controllers\Cargos\ResponsabilidadesController;
+use App\Http\Controllers\Cargos\CompetenciasController;
+use App\Http\Controllers\Cargos\FormacoesController;
+use App\Http\Controllers\Cargos\CursosController;
+
 use App\Http\Controllers\Sst\RiscosController;
 
 /*
@@ -210,4 +215,72 @@ Route::middleware(['auth', 'user.active'])->group(function () {
             Route::delete('/delete/{id}', [CargosController::class, 'delete'])->name('delete');
         });
 
+    /*
+    |--------------------------------------------------------------------------
+    | CARGOS - RESPONSABILIDADE
+    |--------------------------------------------------------------------------
+    */
+    Route::prefix('cargos/responsabilidades')
+        ->name('cargos.responsabilidades.')
+        ->middleware('screen:cargos/responsabilidades')
+        ->group(function () {
+            Route::get('/', [ResponsabilidadesController::class, 'index'])->name('index');
+            Route::get('/list', [ResponsabilidadesController::class, 'list'])->name('list');
+            Route::post('/store', [ResponsabilidadesController::class, 'store'])->name('store');
+            Route::get('/edit/{id}', [ResponsabilidadesController::class, 'edit'])->name('edit');
+            Route::post('/update/{id}', [ResponsabilidadesController::class, 'update'])->name('update');
+            Route::delete('/delete/{id}', [ResponsabilidadesController::class, 'delete'])->name('delete');
+    });
+
+    /*
+    |--------------------------------------------------------------------------
+    | CARGOS - COMPETENCIAS
+    |--------------------------------------------------------------------------
+    */
+    Route::prefix('cargos/competencias')
+        ->name('cargos.competencias.')
+        ->middleware('screen:cargos/competencias')
+        ->group(function () {
+            Route::get('/', [CompetenciasController::class, 'index'])->name('index');
+            Route::get('/list', [CompetenciasController::class, 'list'])->name('list');
+            Route::post('/store', [CompetenciasController::class, 'store'])->name('store');
+            Route::get('/edit/{id}', [CompetenciasController::class, 'edit'])->name('edit');
+            Route::post('/update/{id}', [CompetenciasController::class, 'update'])->name('update');
+            Route::delete('/delete/{id}', [CompetenciasController::class, 'delete'])->name('delete');
+    });
+
+    /*
+    |--------------------------------------------------------------------------
+    | CARGOS - FORMAÇÃO
+    |--------------------------------------------------------------------------
+    */
+    Route::prefix('cargos/formacao')
+        ->name('cargos.formacao.')
+        ->middleware('screen:cargos/formacao')
+        ->group(function () {
+            Route::get('/', [FormacoesController::class, 'index'])->name('index');
+            Route::get('/list', [FormacoesController::class, 'list'])->name('list');
+            Route::post('/store', [FormacoesController::class, 'store'])->name('store');
+            Route::get('/edit/{id}', [FormacoesController::class, 'edit'])->name('edit');
+            Route::post('/update/{id}', [FormacoesController::class, 'update'])->name('update');
+            Route::delete('/delete/{id}', [FormacoesController::class, 'delete'])->name('delete');
+    });
+    
+     /*
+    |--------------------------------------------------------------------------
+    | CARGOS - CURSOS
+    |--------------------------------------------------------------------------
+    */
+    Route::prefix('cargos/cursos')
+        ->name('cargos.cursos.')
+        ->middleware('screen:cargos/cursos')
+        ->group(function () {
+            Route::get('/', [CursosController::class, 'index'])->name('index');
+            Route::get('/list', [CursosController::class, 'list'])->name('list');
+            Route::post('/store', [CursosController::class, 'store'])->name('store');
+            Route::get('/edit/{id}', [CursosController::class, 'edit'])->name('edit');
+            Route::post('/update/{id}', [CursosController::class, 'update'])->name('update');
+            Route::delete('/delete/{id}', [CursosController::class, 'delete'])->name('delete');
+    });
+    
 });
