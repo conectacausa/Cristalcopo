@@ -16,16 +16,21 @@
                     <td>{{ ucfirst($fluxo->modo_aprovacao) }}</td>
                     <td align="center">
                         <div class="clearfix">
-                            <a href="javascript:void(0)"
+                            <a href="{{ route('aprovacao.fluxo.edit', $fluxo->id) }}"
                                class="waves-effect waves-light btn mb-5 bg-gradient-primary">
                                 <i class="fa fa-edit"></i>
                             </a>
 
-                            <button type="button"
-                                    class="waves-effect waves-light btn mb-5 bg-gradient-danger"
-                                    disabled>
-                                <i class="fa fa-trash-o"></i>
-                            </button>
+                            <form action="{{ route('aprovacao.fluxo.delete', $fluxo->id) }}"
+                                  method="POST"
+                                  style="display:inline-block;"
+                                  onsubmit="return confirm('Deseja realmente excluir este fluxo de aprovação?');">
+                                @csrf
+                                <button type="submit"
+                                        class="waves-effect waves-light btn mb-5 bg-gradient-danger">
+                                    <i class="fa fa-trash-o"></i>
+                                </button>
+                            </form>
                         </div>
                     </td>
                 </tr>
