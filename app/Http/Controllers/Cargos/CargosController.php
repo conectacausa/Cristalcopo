@@ -141,6 +141,13 @@ class CargosController extends Controller
             ->select('id', 'codigo_cbo', 'descricao_cbo')
             ->get();
 
+        $riscos = DB::table('sst_riscos')
+            ->whereNull('deleted_at')
+            ->where('ativo', true)
+            ->orderBy('descricao')
+            ->select('id', 'descricao', 'grupo_risco')
+            ->get();
+
         $cargo = null;
 
         $filiaisSelecionadas = array_map('intval', old('filiais', []));
@@ -150,6 +157,7 @@ class CargosController extends Controller
             'cargo',
             'filiais',
             'cbos',
+            'riscos',
             'setoresDisponiveis',
             'permissoes'
         ));
@@ -180,6 +188,13 @@ class CargosController extends Controller
             ->select('id', 'codigo_cbo', 'descricao_cbo')
             ->get();
 
+        $riscos = DB::table('sst_riscos')
+            ->whereNull('deleted_at')
+            ->where('ativo', true)
+            ->orderBy('descricao')
+            ->select('id', 'descricao', 'grupo_risco')
+            ->get();
+
         $cargo->filiais = DB::table('vinculo_cargo_x_filial')
             ->where('cargo_id', $id)
             ->pluck('filial_id')
@@ -192,6 +207,12 @@ class CargosController extends Controller
             ->map(fn ($item) => (int) $item)
             ->toArray();
 
+        $cargo->riscos = DB::table('vinculo_cargo_x_risco')
+            ->where('cargo_id', $id)
+            ->pluck('risco_id')
+            ->map(fn ($item) => (int) $item)
+            ->toArray();
+
         $filiaisSelecionadas = array_map('intval', old('filiais', $cargo->filiais ?? []));
         $setoresDisponiveis = $this->buscarSetoresPorFiliaisIds($filiaisSelecionadas);
 
@@ -199,6 +220,7 @@ class CargosController extends Controller
             'cargo',
             'filiais',
             'cbos',
+            'riscos',
             'setoresDisponiveis',
             'permissoes'
         ));
@@ -267,6 +289,14 @@ class CargosController extends Controller
                 ->pluck('s.descricao')
                 ->toArray();
 
+            $cargo->riscos = DB::table('vinculo_cargo_x_risco as v')
+                ->join('sst_riscos as r', 'r.id', '=', 'v.risco_id')
+                ->where('v.cargo_id', $id)
+                ->whereNull('r.deleted_at')
+                ->orderBy('r.descricao')
+                ->pluck('r.descricao')
+                ->toArray();
+
             return response()->json([
                 'success' => true,
                 'data' => $cargo,
@@ -294,11 +324,14 @@ class CargosController extends Controller
             'filiais.*' => ['integer', 'exists:empresa_filial,id'],
             'setores' => ['required', 'array', 'min:1'],
             'setores.*' => ['integer', 'exists:empresa_setores,id'],
+            'riscos' => ['nullable', 'array'],
+            'riscos.*' => ['integer', 'exists:sst_riscos,id'],
             'conta_base_jovem_aprendiz' => ['nullable'],
         ]);
 
         $filiaisIds = collect((array) $request->filiais)->map(fn ($item) => (int) $item)->all();
         $setoresIds = collect((array) $request->setores)->map(fn ($item) => (int) $item)->all();
+        $riscosIds = collect((array) $request->riscos)->map(fn ($item) => (int) $item)->unique()->all();
 
         if (!$this->setoresPertencemAsFiliais($filiaisIds, $setoresIds)) {
             return redirect()
@@ -310,7 +343,12 @@ class CargosController extends Controller
         try {
             DB::beginTransaction();
 
-            $fluxoAprovacaoId = $this->obterFluxoAprovacaoCargoId();
+            $configuracaoFluxo = DB::table('aprovacao_configuracoes')
+                ->where('tipo_referencia', 'cargo')
+                ->where('ativo', true)
+                ->first();
+
+            $fluxoAprovacaoId = $configuracaoFluxo->fluxo_id ?? null;
             $statusAprovacao = $fluxoAprovacaoId ? 'pendente_aprovacao' : 'rascunho';
             $aprovacaoSolicitacaoId = null;
 
@@ -338,6 +376,15 @@ class CargosController extends Controller
                 DB::table('vinculo_cargo_x_setor')->insert([
                     'cargo_id' => $cargoId,
                     'setor_id' => $setorId,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+            }
+
+            foreach ($riscosIds as $riscoId) {
+                DB::table('vinculo_cargo_x_risco')->insert([
+                    'cargo_id' => $cargoId,
+                    'risco_id' => $riscoId,
                     'created_at' => now(),
                     'updated_at' => now(),
                 ]);
@@ -374,11 +421,14 @@ class CargosController extends Controller
             'filiais.*' => ['integer', 'exists:empresa_filial,id'],
             'setores' => ['required', 'array', 'min:1'],
             'setores.*' => ['integer', 'exists:empresa_setores,id'],
+            'riscos' => ['nullable', 'array'],
+            'riscos.*' => ['integer', 'exists:sst_riscos,id'],
             'conta_base_jovem_aprendiz' => ['nullable'],
         ]);
 
         $filiaisIds = collect((array) $request->filiais)->map(fn ($item) => (int) $item)->all();
         $setoresIds = collect((array) $request->setores)->map(fn ($item) => (int) $item)->all();
+        $riscosIds = collect((array) $request->riscos)->map(fn ($item) => (int) $item)->unique()->all();
 
         if (!$this->setoresPertencemAsFiliais($filiaisIds, $setoresIds)) {
             return redirect()
@@ -421,6 +471,16 @@ class CargosController extends Controller
                 ]);
             }
 
+            DB::table('vinculo_cargo_x_risco')->where('cargo_id', $id)->delete();
+            foreach ($riscosIds as $riscoId) {
+                DB::table('vinculo_cargo_x_risco')->insert([
+                    'cargo_id' => $id,
+                    'risco_id' => $riscoId,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+            }
+
             DB::commit();
 
             return redirect()
@@ -447,6 +507,7 @@ class CargosController extends Controller
 
             DB::table('vinculo_cargo_x_filial')->where('cargo_id', $id)->delete();
             DB::table('vinculo_cargo_x_setor')->where('cargo_id', $id)->delete();
+            DB::table('vinculo_cargo_x_risco')->where('cargo_id', $id)->delete();
 
             DB::table('cargos')
                 ->where('id', $id)
@@ -500,29 +561,6 @@ class CargosController extends Controller
             ->all();
 
         return empty(array_diff($setoresIds, $setoresPermitidos));
-    }
-
-    private function obterFluxoAprovacaoCargoId(): ?int
-    {
-        try {
-            $schema = DB::getSchemaBuilder();
-
-            if (!$schema->hasTable('gestao_configuracao')) {
-                return null;
-            }
-
-            if ($schema->hasColumns('gestao_configuracao', ['chave', 'valor'])) {
-                $valor = DB::table('gestao_configuracao')
-                    ->where('chave', 'fluxo_aprovacao_cargo_id')
-                    ->value('valor');
-
-                return filled($valor) ? (int) $valor : null;
-            }
-
-            return null;
-        } catch (Throwable $e) {
-            return null;
-        }
     }
 
     private function getPermissoes(): array
