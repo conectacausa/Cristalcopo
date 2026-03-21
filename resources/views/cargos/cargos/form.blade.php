@@ -101,7 +101,7 @@
                                             @php
                                                 $filiaisSelecionadas = old('filiais', $cargo->filiais ?? []);
                                             @endphp
-                                            <select class="form-control select2" name="filiais[]" multiple>
+                                            <select class="form-control select2" id="filiais" name="filiais[]" multiple>
                                                 @foreach($filiais as $filial)
                                                     <option value="{{ $filial->id }}"
                                                         {{ in_array($filial->id, $filiaisSelecionadas) ? 'selected' : '' }}>
@@ -118,8 +118,8 @@
                                             @php
                                                 $setoresSelecionados = old('setores', $cargo->setores ?? []);
                                             @endphp
-                                            <select class="form-control select2" name="setores[]" multiple>
-                                                @foreach($setores as $setor)
+                                            <select class="form-control select2" id="setores" name="setores[]" multiple {{ count($setoresDisponiveis ?? []) ? '' : 'disabled' }}>
+                                                @foreach($setoresDisponiveis as $setor)
                                                     <option value="{{ $setor->id }}"
                                                         {{ in_array($setor->id, $setoresSelecionados) ? 'selected' : '' }}>
                                                         {{ $setor->descricao }}
@@ -195,6 +195,50 @@
             allowClear: true,
             width: '100%'
         });
+
+        let setoresSelecionadosIniciais = @json(array_map('intval', old('setores', $cargo->setores ?? [])));
+
+        function carregarSetoresPorFiliais() {
+            const filiais = $('#filiais').val() || [];
+            const $setores = $('#setores');
+
+            if (!filiais.length) {
+                $setores.html('').prop('disabled', true).trigger('change');
+                return;
+            }
+
+            $.ajax({
+                url: '{{ route('cargos.cargos.setores_por_filiais') }}',
+                method: 'GET',
+                data: { filiais: filiais },
+                success: function (response) {
+                    const setores = response.data || [];
+                    const selecionadosAtuais = ($setores.val() || []).map(Number);
+                    const baseSelecionada = selecionadosAtuais.length ? selecionadosAtuais : setoresSelecionadosIniciais;
+
+                    $setores.html('');
+
+                    setores.forEach(function (setor) {
+                        const selected = baseSelecionada.includes(Number(setor.id)) ? 'selected' : '';
+                        $setores.append('<option value="' + setor.id + '" ' + selected + '>' + setor.descricao + '</option>');
+                    });
+
+                    $setores.prop('disabled', false).trigger('change');
+                    setoresSelecionadosIniciais = [];
+                },
+                error: function () {
+                    toastr.error('Erro ao carregar setores das filiais selecionadas.');
+                }
+            });
+        }
+
+        $('#filiais').on('change', function () {
+            carregarSetoresPorFiliais();
+        });
+
+        @if(count(old('filiais', $cargo->filiais ?? [])))
+            carregarSetoresPorFiliais();
+        @endif
     });
 </script>
 @endsection
