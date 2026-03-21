@@ -1,122 +1,121 @@
 <?php
 
-namespace App\Http\Controllers\Pessoas\Colaboradores;
+namespace App\Http\Controllers\Pessoas;
 
 use App\Http\Controllers\Controller;
-use App\Models\Pessoas\Colaborador;
-use App\Models\EmpresaFilial;
-use App\Models\EmpresaSetor;
-use App\Models\Cargos\Cargo;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Http\JsonResponse;
+use Throwable;
 
 class ColaboradoresController extends Controller
 {
-    public function index(Request $request)
+    public function index()
     {
-        $permissao = DB::table('vinculo_permissao_x_tela')
+        $permissoes = $this->getPermissoes();
+
+        abort_unless($permissoes['pode_ler'], 403);
+
+        return view('pessoas.colaboradores.index', compact('permissoes'));
+    }
+
+    public function list(Request $request)
+    {
+        try {
+            $permissoes = $this->getPermissoes();
+
+            abort_unless($permissoes['pode_ler'], 403);
+
+            $query = DB::table('colaboradores as c')
+                ->leftJoin('cargos as ca', 'ca.id', '=', 'c.cargo_id')
+                ->leftJoin('empresa_setores as s', 's.id', '=', 'c.setor_id')
+                ->leftJoin('empresa_filial as f', 'f.id', '=', 'c.filial_id')
+                ->whereNull('c.deleted_at')
+                ->select(
+                    'c.id',
+                    'c.nome_completo',
+                    'c.cpf',
+                    'c.data_nascimento',
+                    'c.data_admissao',
+                    'c.data_desligamento',
+                    'ca.titulo_cargo as cargo_nome',
+                    's.descricao as setor_nome',
+                    'f.nome_fantasia as filial_nome'
+                );
+
+            // Filtro
+            if ($request->filled('busca')) {
+                $busca = trim($request->busca);
+
+                $query->where(function ($q) use ($busca) {
+                    $q->where('c.nome_completo', 'ilike', "%{$busca}%")
+                      ->orWhere('c.cpf', 'ilike', "%{$busca}%");
+                });
+            }
+
+            $dados = $query
+                ->orderBy('c.nome_completo')
+                ->paginate(25);
+
+            return view('pessoas.colaboradores.partials.tabela', compact('dados', 'permissoes'))->render();
+
+        } catch (Throwable $e) {
+            return response()->json([
+                'message' => 'Erro ao carregar colaboradores.',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    public function delete($id)
+    {
+        try {
+            $permissoes = $this->getPermissoes();
+
+            abort_unless($permissoes['pode_excluir'], 403);
+
+            DB::table('colaboradores')
+                ->where('id', $id)
+                ->update([
+                    'deleted_at' => now(),
+                    'updated_at' => now(),
+                ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Colaborador excluído com sucesso.',
+            ]);
+
+        } catch (Throwable $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Erro ao excluir colaborador.',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    private function getPermissoes(): array
+    {
+        $user = Auth::user();
+
+        $registro = DB::table('vinculo_permissao_x_tela')
             ->join('gestao_tela', 'gestao_tela.id', '=', 'vinculo_permissao_x_tela.tela_id')
+            ->where('vinculo_permissao_x_tela.permissao_id', $user->permissao_id)
             ->where('gestao_tela.slug', 'pessoas/colaboradores')
-            ->where('vinculo_permissao_x_tela.permissao_id', auth()->user()->permissao_id)
+            ->select(
+                DB::raw('COALESCE(vinculo_permissao_x_tela.pode_ler, false) as pode_ler'),
+                DB::raw('COALESCE(vinculo_permissao_x_tela.pode_gravar, false) as pode_gravar'),
+                DB::raw('COALESCE(vinculo_permissao_x_tela.pode_editar, false) as pode_editar'),
+                DB::raw('COALESCE(vinculo_permissao_x_tela.pode_excluir, false) as pode_excluir')
+            )
             ->first();
 
-        abort_unless($permissao && $permissao->pode_ler, 403);
-
-        $texto = trim((string) $request->get('texto'));
-        $filiais = array_filter((array) $request->get('filiais', []));
-        $setores = array_filter((array) $request->get('setores', []));
-        $cargos = array_filter((array) $request->get('cargos', []));
-        $situacao = $request->get('situacao', 'ativo');
-
-        $colaboradores = Colaborador::query()
-            ->with(['cargo', 'filial', 'setor'])
-            ->when($texto !== '', function ($q) use ($texto) {
-                $cpf = preg_replace('/\D/', '', $texto);
-
-                $q->where(function ($sub) use ($texto, $cpf) {
-                    $sub->where('nome_completo', 'ILIKE', "%{$texto}%")
-                        ->orWhere('matricula', 'ILIKE', "%{$texto}%");
-
-                    if ($cpf !== '') {
-                        $sub->orWhere('cpf', 'ILIKE', "%{$cpf}%");
-                    }
-                });
-            })
-            ->when(!empty($filiais), fn($q) => $q->whereIn('filial_id', $filiais))
-            ->when(!empty($setores), fn($q) => $q->whereIn('setor_id', $setores))
-            ->when(!empty($cargos), fn($q) => $q->whereIn('cargo_id', $cargos))
-            ->when($situacao === 'ativo', fn($q) => $q->where('situacao', true))
-            ->when($situacao === 'inativo', fn($q) => $q->where('situacao', false))
-            ->orderBy('nome_completo')
-            ->paginate(25)
-            ->withQueryString();
-
-        $filiaisLista = EmpresaFilial::where('situacao', true)
-            ->orderBy('nome_fantasia')
-            ->get();
-
-        if ($request->ajax()) {
-            return view('pessoas.colaboradores.partials.tabela', [
-                'colaboradores' => $colaboradores,
-                'permissao' => $permissao,
-            ])->render();
-        }
-
-        return view('pessoas.colaboradores.index', [
-            'colaboradores' => $colaboradores,
-            'filiaisLista' => $filiaisLista,
-            'permissao' => $permissao,
-            'filtros' => compact('texto', 'filiais', 'setores', 'cargos', 'situacao'),
-        ]);
-    }
-
-    public function getSetores(Request $request): JsonResponse
-    {
-        $filiais = array_filter((array) $request->get('filiais', []));
-
-        $setores = EmpresaSetor::query()
-            ->when(!empty($filiais), function ($q) use ($filiais) {
-                $q->whereIn('id', function ($sub) use ($filiais) {
-                    $sub->select('setor_id')
-                        ->from('vinculo_filial_x_setor')
-                        ->whereIn('filial_id', $filiais);
-                });
-            }, function ($q) {
-                $q->whereRaw('1 = 0');
-            })
-            ->orderBy('descricao')
-            ->get(['id', 'descricao']);
-
-        return response()->json($setores);
-    }
-
-    public function getCargos(Request $request): JsonResponse
-    {
-        $setores = array_filter((array) $request->get('setores', []));
-
-        $cargos = Cargo::query()
-            ->when(!empty($setores), function ($q) use ($setores) {
-                $q->whereIn('id', function ($sub) use ($setores) {
-                    $sub->select('cargo_id')
-                        ->from('vinculo_cargo_x_setor')
-                        ->whereIn('setor_id', $setores);
-                });
-            }, function ($q) {
-                $q->whereRaw('1 = 0');
-            })
-            ->orderBy('titulo_cargo')
-            ->get(['id', 'titulo_cargo']);
-
-        return response()->json($cargos);
-    }
-
-    public function destroy(Colaborador $colaborador)
-    {
-        $colaborador->delete();
-
-        return redirect()
-            ->route('pessoas.colaboradores.index')
-            ->with('success', 'Colaborador excluído com sucesso.');
+        return [
+            'pode_ler' => (bool) ($registro->pode_ler ?? false),
+            'pode_gravar' => (bool) ($registro->pode_gravar ?? false),
+            'pode_editar' => (bool) ($registro->pode_editar ?? false),
+            'pode_excluir' => (bool) ($registro->pode_excluir ?? false),
+        ];
     }
 }
