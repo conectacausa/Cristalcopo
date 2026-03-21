@@ -1,30 +1,3 @@
-@php
-    $isPaginator = $dados instanceof \Illuminate\Contracts\Pagination\Paginator
-        || $dados instanceof \Illuminate\Contracts\Pagination\LengthAwarePaginator;
-
-    $statusLabel = function ($status) {
-        return match ($status) {
-            'rascunho' => 'Rascunho',
-            'pendente_aprovacao' => 'Pendente Aprovação',
-            'em_aprovacao' => 'Em Aprovação',
-            'aprovado' => 'Aprovado',
-            'reprovado' => 'Reprovado',
-            'cancelado' => 'Cancelado',
-            default => ucfirst(str_replace('_', ' ', $status ?? ''));
-        };
-    };
-
-    $statusClass = function ($status) {
-        return match ($status) {
-            'aprovado' => 'badge badge-success',
-            'reprovado' => 'badge badge-danger',
-            'cancelado' => 'badge badge-dark',
-            'pendente_aprovacao', 'em_aprovacao' => 'badge badge-warning',
-            default => 'badge badge-secondary',
-        };
-    };
-@endphp
-
 <div class="table-responsive">
     <table class="table">
         <thead class="bg-primary">
@@ -36,7 +9,7 @@
             </tr>
         </thead>
         <tbody>
-            @if($isPaginator && $dados->count())
+            @if(isset($dados) && method_exists($dados, 'count') && $dados->count())
                 @foreach($dados as $cargo)
                     <tr>
                         <td>
@@ -61,8 +34,31 @@
                         </td>
 
                         <td align="center">
-                            <span class="{{ $statusClass($cargo->status_aprovacao) }}">
-                                {{ $statusLabel($cargo->status_aprovacao) }}
+                            @php
+                                $status = $cargo->status_aprovacao ?? 'rascunho';
+                                $statusTexto = 'Rascunho';
+                                $statusClasse = 'badge badge-secondary';
+
+                                if ($status === 'pendente_aprovacao') {
+                                    $statusTexto = 'Pendente Aprovação';
+                                    $statusClasse = 'badge badge-warning';
+                                } elseif ($status === 'em_aprovacao') {
+                                    $statusTexto = 'Em Aprovação';
+                                    $statusClasse = 'badge badge-warning';
+                                } elseif ($status === 'aprovado') {
+                                    $statusTexto = 'Aprovado';
+                                    $statusClasse = 'badge badge-success';
+                                } elseif ($status === 'reprovado') {
+                                    $statusTexto = 'Reprovado';
+                                    $statusClasse = 'badge badge-danger';
+                                } elseif ($status === 'cancelado') {
+                                    $statusTexto = 'Cancelado';
+                                    $statusClasse = 'badge badge-dark';
+                                }
+                            @endphp
+
+                            <span class="{{ $statusClasse }}">
+                                {{ $statusTexto }}
                             </span>
                         </td>
 
@@ -75,7 +71,7 @@
                                     <i class="fa fa-download"></i>
                                 </button>
 
-                                @if($permissoes['pode_editar'])
+                                @if(!empty($permissoes['pode_editar']))
                                     <button type="button"
                                             class="waves-effect waves-light btn mb-5 bg-gradient-primary btn-editar-cargo"
                                             data-id="{{ $cargo->id }}"
@@ -84,7 +80,7 @@
                                     </button>
                                 @endif
 
-                                @if($permissoes['pode_excluir'])
+                                @if(!empty($permissoes['pode_excluir']))
                                     <button type="button"
                                             class="waves-effect waves-light btn mb-5 bg-gradient-danger btn-excluir-cargo"
                                             data-url="{{ route('cargos.cargos.delete', $cargo->id) }}"
@@ -105,7 +101,7 @@
     </table>
 </div>
 
-@if($isPaginator)
+@if(isset($dados) && method_exists($dados, 'links'))
     <div class="mt-15">
         {{ $dados->links() }}
     </div>
