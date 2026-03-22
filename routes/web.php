@@ -23,6 +23,13 @@ use App\Http\Controllers\Sst\RiscosController;
 use App\Http\Controllers\Pessoas\Colaboradores\ColaboradoresController;
 use App\Http\Controllers\Configuracao\Importar\ImportarColaboradoresController;
 
+use App\Http\Controllers\Avaliacoes\Desempenho\CicloAvaliacaoController;
+use App\Http\Controllers\Avaliacoes\Desempenho\PilarAvaliacaoController;
+use App\Http\Controllers\Avaliacoes\Desempenho\GrupoAvaliacaoController;
+use App\Http\Controllers\Avaliacoes\Desempenho\SubgrupoAvaliacaoController;
+use App\Http\Controllers\Avaliacoes\Desempenho\PerguntaAvaliacaoController;
+
+
 /*
 |--------------------------------------------------------------------------
 | HOME
@@ -286,6 +293,68 @@ Route::middleware(['auth', 'user.active'])->group(function () {
             Route::delete('/delete/{id}', [CursosController::class, 'delete'])->name('delete');
     });
     
+    /*
+    |--------------------------------------------------------------------------
+    | AVALIAÇÕES - DESEMPENHO
+    |--------------------------------------------------------------------------
+    */
+    Route::prefix('avaliacoes/desempenho/ciclos')
+        ->name('avaliacoes.desempenho.ciclos.')
+        ->middleware('screen:avaliacoes/desempenho/ciclos')
+        ->group(function () {
+            Route::get('/', [CicloAvaliacaoController::class, 'index'])->name('index');
+            Route::get('/create', [CicloAvaliacaoController::class, 'create'])->name('create');
+            Route::post('/', [CicloAvaliacaoController::class, 'store'])->name('store');
+            Route::get('/{id}/edit', [CicloAvaliacaoController::class, 'edit'])->name('edit');
+            Route::put('/{ciclo}', [CicloAvaliacaoController::class, 'update'])->name('update');
+            Route::delete('/{id}', [CicloAvaliacaoController::class, 'destroy'])->name('destroy');
+        });
+
+    Route::prefix('avaliacoes/desempenho/pilares')
+        ->name('avaliacoes.desempenho.pilares.')
+        ->middleware('screen:avaliacoes/desempenho/ciclos')
+        ->group(function () {
+            Route::get('/create/{ciclo}', [PilarAvaliacaoController::class, 'create'])->name('create');
+            Route::post('/', [PilarAvaliacaoController::class, 'store'])->name('store');
+            Route::get('/{pilar}/edit', [PilarAvaliacaoController::class, 'edit'])->name('edit');
+            Route::put('/{pilar}', [PilarAvaliacaoController::class, 'update'])->name('update');
+            Route::delete('/{pilar}', [PilarAvaliacaoController::class, 'destroy'])->name('destroy');
+        });
+
+    Route::prefix('avaliacoes/desempenho/grupos')
+        ->name('avaliacoes.desempenho.grupos.')
+        ->middleware('screen:avaliacoes/desempenho/ciclos')
+        ->group(function () {
+            Route::get('/create/{pilar}', [GrupoAvaliacaoController::class, 'create'])->name('create');
+            Route::post('/', [GrupoAvaliacaoController::class, 'store'])->name('store');
+            Route::get('/{grupo}/edit', [GrupoAvaliacaoController::class, 'edit'])->name('edit');
+            Route::put('/{grupo}', [GrupoAvaliacaoController::class, 'update'])->name('update');
+            Route::delete('/{grupo}', [GrupoAvaliacaoController::class, 'destroy'])->name('destroy');
+        });
+
+    Route::prefix('avaliacoes/desempenho/subgrupos')
+        ->name('avaliacoes.desempenho.subgrupos.')
+        ->middleware('screen:avaliacoes/desempenho/ciclos')
+        ->group(function () {
+            Route::get('/create/{grupo}', [SubgrupoAvaliacaoController::class, 'create'])->name('create');
+            Route::post('/', [SubgrupoAvaliacaoController::class, 'store'])->name('store');
+            Route::get('/{subgrupo}/edit', [SubgrupoAvaliacaoController::class, 'edit'])->name('edit');
+            Route::put('/{subgrupo}', [SubgrupoAvaliacaoController::class, 'update'])->name('update');
+            Route::delete('/{subgrupo}', [SubgrupoAvaliacaoController::class, 'destroy'])->name('destroy');
+        });
+
+    Route::prefix('avaliacoes/desempenho/perguntas')
+        ->name('avaliacoes.desempenho.perguntas.')
+        ->middleware('screen:avaliacoes/desempenho/ciclos')
+        ->group(function () {
+            Route::get('/create/{ciclo}', [PerguntaAvaliacaoController::class, 'create'])->name('create');
+            Route::post('/', [PerguntaAvaliacaoController::class, 'store'])->name('store');
+            Route::get('/{pergunta}/edit', [PerguntaAvaliacaoController::class, 'edit'])->name('edit');
+            Route::put('/{pergunta}', [PerguntaAvaliacaoController::class, 'update'])->name('update');
+            Route::delete('/{pergunta}', [PerguntaAvaliacaoController::class, 'destroy'])->name('destroy');
+        });
+
+
     /*
     |--------------------------------------------------------------------------
     | PESSOAS - COLABORADORES
