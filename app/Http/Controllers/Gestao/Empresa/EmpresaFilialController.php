@@ -83,6 +83,7 @@ class EmpresaFilialController extends Controller
 
     public function store(StoreEmpresaFilialRequest $request): RedirectResponse
     {
+
         $this->authorize('create', EmpresaFilial::class);
 
         $validated = $request->validated();
@@ -161,7 +162,9 @@ class EmpresaFilialController extends Controller
     public function update(UpdateEmpresaFilialRequest $request, int $id): RedirectResponse
     {
         $filial = EmpresaFilial::query()->findOrFail($id);
+
         $this->authorize('update', $filial);
+
         $validated = $request->validated();
 
         DB::transaction(function () use ($filial, $validated, $request) {
