@@ -2,6 +2,11 @@
 
 namespace App\Providers;
 
+use App\Models\Cargos\Cargo;
+use App\Models\EmpresaFilial;
+use App\Policies\CargoPolicy;
+use App\Policies\EmpresaFilialPolicy;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -19,6 +24,7 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        //
+        Gate::policy(EmpresaFilial::class, EmpresaFilialPolicy::class);
+        Gate::policy(Cargo::class, CargoPolicy::class);
     }
 }

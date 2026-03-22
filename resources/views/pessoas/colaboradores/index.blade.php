@@ -36,8 +36,8 @@
                         <div class="box-body">
                             <div id="resultado-tabela">
                                 @include('pessoas.colaboradores.partials.tabela', [
-                                    'colaboradores' => $colaboradores,
-                                    'permissao' => $permissao
+                                    'dados' => $dados,
+                                    'permissoes' => $permissoes,
                                 ])
                             </div>
                         </div>
@@ -56,6 +56,9 @@
 
 <script>
 $(document).ready(function () {
+    const $filiais = $('select[name="filiais[]"]');
+    const $setores = $('select[name="setores[]"]');
+    const $cargos = $('select[name="cargos[]"]');
 
     $('.select2').select2({
         placeholder: 'Selecione',
@@ -67,7 +70,6 @@ $(document).ready(function () {
     let debounce = null;
 
     function carregarTabela(url = '{{ route('pessoas.colaboradores.index') }}') {
-
         if (request) {
             request.abort();
         }
@@ -89,6 +91,54 @@ $(document).ready(function () {
         });
     }
 
+    function carregarSetores(selecionados = [], onLoaded = null) {
+        $.ajax({
+            url: "{{ route('pessoas.colaboradores.setores') }}",
+            method: 'GET',
+            data: { filiais: $filiais.val() || [] },
+            success: function (data) {
+                $setores.empty();
+
+                data.forEach(function (item) {
+                    const selected = selecionados.includes(String(item.id)) || selecionados.includes(item.id);
+                    const option = new Option(item.descricao, item.id, selected, selected);
+                    $setores.append(option);
+                });
+
+                $setores.trigger('change.select2');
+
+                if (typeof onLoaded === 'function') {
+                    onLoaded();
+                }
+            },
+            error: function () {
+                toastr.error('Erro ao carregar setores.');
+            }
+        });
+    }
+
+    function carregarCargos(selecionados = []) {
+        $.ajax({
+            url: "{{ route('pessoas.colaboradores.cargos') }}",
+            method: 'GET',
+            data: { setores: $setores.val() || [] },
+            success: function (data) {
+                $cargos.empty();
+
+                data.forEach(function (item) {
+                    const selected = selecionados.includes(String(item.id)) || selecionados.includes(item.id);
+                    const option = new Option(item.titulo_cargo, item.id, selected, selected);
+                    $cargos.append(option);
+                });
+
+                $cargos.trigger('change.select2');
+            },
+            error: function () {
+                toastr.error('Erro ao carregar cargos.');
+            }
+        });
+    }
+
     $('input[name="texto"]').on('keyup', function () {
         clearTimeout(debounce);
         debounce = setTimeout(function () {
@@ -100,58 +150,18 @@ $(document).ready(function () {
         carregarTabela();
     });
 
-    $('select[name="filiais[]"]').on('change', function () {
-        let filiais = $(this).val();
-
-        $.ajax({
-            url: "{{ route('pessoas.colaboradores.setores') }}",
-            method: 'GET',
-            data: { filiais: filiais },
-            success: function (data) {
-                let $setores = $('select[name="setores[]"]');
-                let $cargos = $('select[name="cargos[]"]');
-
-                $setores.empty();
-                $cargos.empty();
-
-                data.forEach(function (item) {
-                    $setores.append(new Option(item.descricao, item.id));
-                });
-
-                $setores.trigger('change');
-                carregarTabela();
-            },
-            error: function () {
-                toastr.error('Erro ao carregar setores.');
-            }
-        });
+    $filiais.on('change', function () {
+        carregarSetores();
+        $cargos.empty().trigger('change.select2');
+        carregarTabela();
     });
 
-    $('select[name="setores[]"]').on('change', function () {
-        let setores = $(this).val();
-
-        $.ajax({
-            url: "{{ route('pessoas.colaboradores.cargos') }}",
-            method: 'GET',
-            data: { setores: setores },
-            success: function (data) {
-                let $cargos = $('select[name="cargos[]"]');
-                $cargos.empty();
-
-                data.forEach(function (item) {
-                    $cargos.append(new Option(item.titulo_cargo, item.id));
-                });
-
-                $cargos.trigger('change');
-                carregarTabela();
-            },
-            error: function () {
-                toastr.error('Erro ao carregar cargos.');
-            }
-        });
+    $setores.on('change', function () {
+        carregarCargos();
+        carregarTabela();
     });
 
-    $('select[name="cargos[]"]').on('change', function () {
+    $cargos.on('change', function () {
         carregarTabela();
     });
 
@@ -160,27 +170,16 @@ $(document).ready(function () {
         carregarTabela($(this).attr('href'));
     });
 
-    $(document).on('click', '.btn-excluir-colaborador', function (e) {
-        e.preventDefault();
+    const setoresSelecionados = @json(array_map('strval', $filtros['setores'] ?? []));
+    const cargosSelecionados = @json(array_map('strval', $filtros['cargos'] ?? []));
 
-        const form = $(this).closest('form');
-
-        swal({
-            title: 'Excluir colaborador?',
-            text: 'Esta ação fará a exclusão lógica do registro.',
-            type: 'warning',
-            showCancelButton: true,
-            confirmButtonColor: '#3085d6',
-            cancelButtonColor: '#d33',
-            confirmButtonText: 'Sim, excluir',
-            cancelButtonText: 'Cancelar'
-        }, function (isConfirm) {
-            if (isConfirm) {
-                form.submit();
+    if (($filiais.val() || []).length > 0) {
+        carregarSetores(setoresSelecionados, function () {
+            if (setoresSelecionados.length > 0) {
+                carregarCargos(cargosSelecionados);
             }
         });
-    });
-
+    }
 });
 </script>
 @endsection

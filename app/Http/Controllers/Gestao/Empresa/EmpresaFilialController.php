@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\Gestao\Empresa;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Empresa\StoreEmpresaFilialRequest;
+use App\Http\Requests\Empresa\UpdateEmpresaFilialRequest;
 use App\Models\EmpresaCnae;
 use App\Models\EmpresaFilial;
 use App\Models\EmpresaNatJuridica;
@@ -16,14 +18,14 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
-use Illuminate\Validation\Rule;
-use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
 class EmpresaFilialController extends Controller
 {
     public function index(Request $request): View
     {
+        $this->authorize('viewAny', EmpresaFilial::class);
+
         $query = EmpresaFilial::query()
             ->with([
                 'porte:id,descricao',
@@ -56,6 +58,8 @@ class EmpresaFilialController extends Controller
 
     public function create(): View
     {
+        $this->authorize('create', EmpresaFilial::class);
+
         $portes = EmpresaPorte::query()
             ->orderBy('codigo')
             ->get(['id', 'codigo', 'descricao']);
@@ -77,18 +81,11 @@ class EmpresaFilialController extends Controller
         ]);
     }
 
-    public function store(Request $request): RedirectResponse
+    public function store(StoreEmpresaFilialRequest $request): RedirectResponse
     {
-        $data = $this->normalizePayload($request);
+        $this->authorize('create', EmpresaFilial::class);
 
-        $validated = validator(
-            $data,
-            $this->rules(),
-            $this->messages(),
-            $this->attributes()
-        )->validate();
-
-        $this->validateGeography($validated);
+        $validated = $request->validated();
 
         $filial = null;
 
@@ -116,6 +113,8 @@ class EmpresaFilialController extends Controller
                 'cidade:id,nome,estado_id',
             ])
             ->findOrFail($id);
+
+        $this->authorize('view', $filial);
 
         $portes = EmpresaPorte::query()
             ->orderBy('codigo')
@@ -159,20 +158,11 @@ class EmpresaFilialController extends Controller
         ));
     }
 
-    public function update(Request $request, int $id): RedirectResponse
+    public function update(UpdateEmpresaFilialRequest $request, int $id): RedirectResponse
     {
         $filial = EmpresaFilial::query()->findOrFail($id);
-
-        $data = $this->normalizePayload($request);
-
-        $validated = validator(
-            $data,
-            $this->rules($filial->id),
-            $this->messages(),
-            $this->attributes()
-        )->validate();
-
-        $this->validateGeography($validated);
+        $this->authorize('update', $filial);
+        $validated = $request->validated();
 
         DB::transaction(function () use ($filial, $validated, $request) {
             $filial->update($validated);
@@ -190,6 +180,7 @@ class EmpresaFilialController extends Controller
     public function destroy(int $id): RedirectResponse
     {
         $filial = EmpresaFilial::query()->findOrFail($id);
+        $this->authorize('delete', $filial);
         $filial->delete();
 
         return redirect()
@@ -199,6 +190,8 @@ class EmpresaFilialController extends Controller
 
     public function estadosPorPais(int $paisId): JsonResponse
     {
+        $this->authorize('viewAny', EmpresaFilial::class);
+
         $estados = GestaoEstado::query()
             ->where('pais_id', $paisId)
             ->orderBy('nome')
@@ -209,6 +202,8 @@ class EmpresaFilialController extends Controller
 
     public function cidadesPorEstado(int $estadoId): JsonResponse
     {
+        $this->authorize('viewAny', EmpresaFilial::class);
+
         $cidades = GestaoCidade::query()
             ->where('estado_id', $estadoId)
             ->orderBy('nome')
@@ -219,6 +214,8 @@ class EmpresaFilialController extends Controller
 
     public function buscarPortePorCodigo(string $codigo): JsonResponse
     {
+        $this->authorize('viewAny', EmpresaFilial::class);
+
         $porte = EmpresaPorte::query()
             ->where('codigo', $codigo)
             ->first(['id', 'codigo', 'descricao']);
@@ -231,6 +228,8 @@ class EmpresaFilialController extends Controller
 
     public function buscarNaturezaPorCodigo(string $codigo): JsonResponse
     {
+        $this->authorize('viewAny', EmpresaFilial::class);
+
         $natureza = EmpresaNatJuridica::query()
             ->where('codigo', $codigo)
             ->first(['id', 'codigo', 'descricao']);
@@ -243,6 +242,8 @@ class EmpresaFilialController extends Controller
 
     public function buscarCnaePorSubclasse(string $subclasse): JsonResponse
     {
+        $this->authorize('viewAny', EmpresaFilial::class);
+
         $subclasse = $this->normalizeCnae($subclasse);
 
         $cnae = EmpresaCnae::query()
@@ -258,6 +259,7 @@ class EmpresaFilialController extends Controller
     public function adicionarCnae(Request $request, int $filialId): JsonResponse
     {
         $filial = EmpresaFilial::query()->findOrFail($filialId);
+        $this->authorize('update', $filial);
 
         $validated = $request->validate([
             'subclasse' => ['required', 'string', 'max:15'],
@@ -308,7 +310,8 @@ class EmpresaFilialController extends Controller
 
     public function atualizarPrincipalCnae(Request $request, int $vinculoId): JsonResponse
     {
-        $vinculo = VinculoFilialXCnae::query()->findOrFail($vinculoId);
+        $vinculo = VinculoFilialXCnae::query()->with('filial')->findOrFail($vinculoId);
+        $this->authorize('update', $vinculo->filial);
 
         $validated = $request->validate([
             'principal' => ['required', 'boolean'],
@@ -336,7 +339,8 @@ class EmpresaFilialController extends Controller
 
     public function removerCnae(int $vinculoId): JsonResponse
     {
-        $vinculo = VinculoFilialXCnae::query()->findOrFail($vinculoId);
+        $vinculo = VinculoFilialXCnae::query()->with('filial')->findOrFail($vinculoId);
+        $this->authorize('update', $vinculo->filial);
         $filialId = $vinculo->filial_id;
 
         $vinculo->delete();
@@ -350,6 +354,8 @@ class EmpresaFilialController extends Controller
 
     public function consultarCnpj(string $cnpj): JsonResponse
     {
+        $this->authorize('viewAny', EmpresaFilial::class);
+
         $cnpj = $this->onlyNumbers($cnpj);
 
         if (strlen($cnpj) !== 14) {
@@ -389,128 +395,6 @@ class EmpresaFilialController extends Controller
                 'referencias' => $referencias,
             ],
         ]);
-    }
-
-    private function rules(?int $id = null): array
-    {
-        return [
-            'razao_social' => ['required', 'string', 'max:200'],
-            'cnpj' => [
-                'required',
-                'string',
-                'size:14',
-                Rule::unique('empresa_filial', 'cnpj')->ignore($id),
-            ],
-            'nome_fantasia' => ['required', 'string', 'max:200'],
-            'data_abertura' => ['required', 'date'],
-            'porte_id' => ['required', 'integer', 'exists:empresa_porte,id'],
-            'natureza_juridica_id' => ['required', 'integer', 'exists:empresa_nat_juridica,id'],
-            'tipo' => ['required', Rule::in(['matriz', 'filial'])],
-            'situacao' => ['required', 'boolean'],
-            'telefone1' => ['nullable', 'string', 'max:20'],
-            'telefone2' => ['nullable', 'string', 'max:20'],
-            'email' => ['nullable', 'email', 'max:150'],
-            'logradouro' => ['nullable', 'string', 'max:200'],
-            'numero' => ['nullable', 'string', 'max:20'],
-            'bairro' => ['nullable', 'string', 'max:150'],
-            'cidade_id' => ['required', 'integer', 'exists:gestao_cidade,id'],
-            'estado_id' => ['required', 'integer', 'exists:gestao_estado,id'],
-            'pais_id' => ['required', 'integer', 'exists:gestao_pais,id'],
-            'complemento' => ['nullable', 'string', 'max:200'],
-            'cep' => ['nullable', 'string', 'size:8'],
-        ];
-    }
-
-    private function messages(): array
-    {
-        return [
-            'required' => 'O campo :attribute é obrigatório.',
-            'string' => 'O campo :attribute deve ser um texto válido.',
-            'integer' => 'O campo :attribute deve ser um número válido.',
-            'email' => 'O campo e-mail deve conter um endereço válido.',
-            'date' => 'O campo data de abertura deve conter uma data válida.',
-            'max' => 'O campo :attribute não pode ter mais de :max caracteres.',
-            'size' => 'O campo :attribute deve ter :size caracteres.',
-            'exists' => 'O valor informado para :attribute é inválido.',
-            'unique' => 'Já existe um registro com este :attribute.',
-            'in' => 'O valor informado para :attribute é inválido.',
-            'situacao.boolean' => 'A situação informada é inválida.',
-        ];
-    }
-
-    private function attributes(): array
-    {
-        return [
-            'razao_social' => 'razão social',
-            'cnpj' => 'CNPJ',
-            'nome_fantasia' => 'nome fantasia',
-            'data_abertura' => 'data de abertura',
-            'porte_id' => 'porte',
-            'natureza_juridica_id' => 'natureza jurídica',
-            'tipo' => 'tipo',
-            'situacao' => 'situação',
-            'telefone1' => 'telefone 1',
-            'telefone2' => 'telefone 2',
-            'email' => 'e-mail',
-            'logradouro' => 'logradouro',
-            'numero' => 'número',
-            'bairro' => 'bairro',
-            'cidade_id' => 'cidade',
-            'estado_id' => 'estado',
-            'pais_id' => 'país',
-            'complemento' => 'complemento',
-            'cep' => 'CEP',
-        ];
-    }
-
-    private function normalizePayload(Request $request): array
-    {
-        return [
-            'razao_social' => trim((string) $request->input('razao_social')),
-            'cnpj' => $this->onlyNumbers($request->input('cnpj')),
-            'nome_fantasia' => trim((string) $request->input('nome_fantasia')),
-            'data_abertura' => $request->input('data_abertura'),
-            'porte_id' => $request->input('porte_id'),
-            'natureza_juridica_id' => $request->input('natureza_juridica_id'),
-            'tipo' => $request->input('tipo'),
-            'situacao' => filter_var($request->input('situacao'), FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE),
-            'telefone1' => $this->nullableString($this->onlyNumbers($request->input('telefone1'))),
-            'telefone2' => $this->nullableString($this->onlyNumbers($request->input('telefone2'))),
-            'email' => $this->nullableString(mb_strtolower(trim((string) $request->input('email')))),
-            'logradouro' => $this->nullableString(trim((string) $request->input('logradouro'))),
-            'numero' => $this->nullableString(trim((string) $request->input('numero'))),
-            'bairro' => $this->nullableString(trim((string) $request->input('bairro'))),
-            'cidade_id' => $request->input('cidade_id'),
-            'estado_id' => $request->input('estado_id'),
-            'pais_id' => $request->input('pais_id'),
-            'complemento' => $this->nullableString(trim((string) $request->input('complemento'))),
-            'cep' => $this->nullableString($this->onlyNumbers($request->input('cep'))),
-        ];
-    }
-
-    private function validateGeography(array $data): void
-    {
-        $estado = GestaoEstado::query()
-            ->where('id', $data['estado_id'])
-            ->where('pais_id', $data['pais_id'])
-            ->first();
-
-        if (!$estado) {
-            throw ValidationException::withMessages([
-                'estado_id' => 'O estado informado não pertence ao país selecionado.',
-            ]);
-        }
-
-        $cidade = GestaoCidade::query()
-            ->where('id', $data['cidade_id'])
-            ->where('estado_id', $data['estado_id'])
-            ->first();
-
-        if (!$cidade) {
-            throw ValidationException::withMessages([
-                'cidade_id' => 'A cidade informada não pertence ao estado selecionado.',
-            ]);
-        }
     }
 
     private function garantirReferenciasDaApi(array $payload): array
