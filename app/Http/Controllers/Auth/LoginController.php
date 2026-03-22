@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Auth\LoginRequest;
 use App\Models\Colaborador;
 use App\Models\VinculoPermissaoXTela;
 use Illuminate\Http\RedirectResponse;
@@ -26,13 +27,8 @@ class LoginController extends Controller
         ]);
     }
 
-    public function autenticar(Request $request): RedirectResponse
+    public function autenticar(LoginRequest $request): RedirectResponse
     {
-        $request->validate([
-            'cpf' => ['required', 'string'],
-            'senha' => ['required', 'string'],
-        ]);
-
         $cpf = preg_replace('/\D/', '', (string) $request->cpf);
 
         $colaborador = Colaborador::query()
