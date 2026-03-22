@@ -445,8 +445,6 @@ class CargosController extends Controller
     {
         $this->authorize('create', Cargo::class);
 
-        $permissoes = $this->getPermissoes();
-
         $filiaisIds = collect((array) $request->filiais)->map(fn ($item) => (int) $item)->unique()->all();
         $setoresIds = collect((array) $request->setores)->map(fn ($item) => (int) $item)->unique()->all();
         $riscosIds = collect((array) $request->riscos)->map(fn ($item) => (int) $item)->unique()->all();
@@ -526,8 +524,6 @@ class CargosController extends Controller
     {
         $cargoModel = Cargo::query()->findOrFail($id);
         $this->authorize('update', $cargoModel);
-
-        $permissoes = $this->getPermissoes();
 
         $filiaisIds = collect((array) $request->filiais)->map(fn ($item) => (int) $item)->unique()->all();
         $setoresIds = collect((array) $request->setores)->map(fn ($item) => (int) $item)->unique()->all();
