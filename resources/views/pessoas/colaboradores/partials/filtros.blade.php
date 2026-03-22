@@ -37,12 +37,7 @@
                         <div class="col-md-4">
                             <div class="form-group">
                                 <label class="form-label">Filiais</label>
-                                <select
-                                    name="filiais[]"
-                                    class="form-control select2"
-                                    multiple="multiple"
-                                    data-placeholder="Selecione as filiais"
-                                >
+                                <select name="filiais[]" class="form-control select2" multiple="multiple" data-placeholder="Selecione as filiais">
                                     @foreach($filiaisLista as $filial)
                                         <option value="{{ $filial->id }}" @selected(in_array($filial->id, $filtros['filiais'] ?? []))>
                                             {{ $filial->nome_fantasia }}
@@ -55,12 +50,12 @@
                         <div class="col-md-4">
                             <div class="form-group">
                                 <label class="form-label">Setores</label>
-                                <select
-                                    name="setores[]"
-                                    class="form-control select2"
-                                    multiple="multiple"
-                                    data-placeholder="Selecione os setores"
-                                >
+                                <select name="setores[]" class="form-control select2" multiple="multiple" data-placeholder="Selecione os setores">
+                                    @foreach($setoresLista as $setor)
+                                        <option value="{{ $setor->id }}" @selected(in_array($setor->id, $filtros['setores'] ?? []))>
+                                            {{ $setor->descricao }}
+                                        </option>
+                                    @endforeach
                                 </select>
                             </div>
                         </div>
@@ -68,12 +63,12 @@
                         <div class="col-md-4">
                             <div class="form-group">
                                 <label class="form-label">Cargos</label>
-                                <select
-                                    name="cargos[]"
-                                    class="form-control select2"
-                                    multiple="multiple"
-                                    data-placeholder="Selecione os cargos"
-                                >
+                                <select name="cargos[]" class="form-control select2" multiple="multiple" data-placeholder="Selecione os cargos">
+                                    @foreach($cargosLista as $cargo)
+                                        <option value="{{ $cargo->id }}" @selected(in_array($cargo->id, $filtros['cargos'] ?? []))>
+                                            {{ $cargo->titulo_cargo }}
+                                        </option>
+                                    @endforeach
                                 </select>
                             </div>
                         </div>
