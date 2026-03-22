@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\Gestao\Empresa;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Empresa\StoreEmpresaFilialRequest;
+use App\Http\Requests\Empresa\UpdateEmpresaFilialRequest;
 use App\Models\EmpresaCnae;
 use App\Models\EmpresaFilial;
 use App\Models\EmpresaNatJuridica;
@@ -16,8 +18,6 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
-use Illuminate\Validation\Rule;
-use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
 class EmpresaFilialController extends Controller
@@ -77,18 +77,9 @@ class EmpresaFilialController extends Controller
         ]);
     }
 
-    public function store(Request $request): RedirectResponse
+    public function store(StoreEmpresaFilialRequest $request): RedirectResponse
     {
-        $data = $this->normalizePayload($request);
-
-        $validated = validator(
-            $data,
-            $this->rules(),
-            $this->messages(),
-            $this->attributes()
-        )->validate();
-
-        $this->validateGeography($validated);
+        $validated = $request->validated();
 
         $filial = null;
 
@@ -159,20 +150,10 @@ class EmpresaFilialController extends Controller
         ));
     }
 
-    public function update(Request $request, int $id): RedirectResponse
+    public function update(UpdateEmpresaFilialRequest $request, int $id): RedirectResponse
     {
         $filial = EmpresaFilial::query()->findOrFail($id);
-
-        $data = $this->normalizePayload($request);
-
-        $validated = validator(
-            $data,
-            $this->rules($filial->id),
-            $this->messages(),
-            $this->attributes()
-        )->validate();
-
-        $this->validateGeography($validated);
+        $validated = $request->validated();
 
         DB::transaction(function () use ($filial, $validated, $request) {
             $filial->update($validated);
