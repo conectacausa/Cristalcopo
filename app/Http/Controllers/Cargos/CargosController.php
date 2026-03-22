@@ -3,6 +3,9 @@
 namespace App\Http\Controllers\Cargos;
 
 use App\Http\Controllers\Controller;
+use App\Models\Cargos\Cargo;
+use App\Http\Requests\Cargos\StoreCargoRequest;
+use App\Http\Requests\Cargos\UpdateCargoRequest;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -12,9 +15,9 @@ class CargosController extends Controller
 {
     public function index()
     {
-        $permissoes = $this->getPermissoes();
+        $this->authorize('viewAny', Cargo::class);
 
-        abort_unless($permissoes['pode_ler'], 403);
+        $permissoes = $this->getPermissoes();
 
         $filiais = DB::table('empresa_filial')
             ->whereNull('deleted_at')
@@ -28,9 +31,9 @@ class CargosController extends Controller
     public function list(Request $request)
     {
         try {
-            $permissoes = $this->getPermissoes();
+            $this->authorize('viewAny', Cargo::class);
 
-            abort_unless($permissoes['pode_ler'], 403);
+            $permissoes = $this->getPermissoes();
 
             $query = DB::table('cargos as c')
                 ->leftJoin('cargos_cbo as cbo', 'cbo.id', '=', 'c.cargo_cbo_id')
@@ -125,9 +128,9 @@ class CargosController extends Controller
 
     public function create()
     {
-        $permissoes = $this->getPermissoes();
+        $this->authorize('create', Cargo::class);
 
-        abort_unless($permissoes['pode_gravar'], 403);
+        $permissoes = $this->getPermissoes();
 
         $filiais = DB::table('empresa_filial')
             ->whereNull('deleted_at')
@@ -201,9 +204,10 @@ class CargosController extends Controller
 
     public function editPage($id)
     {
-        $permissoes = $this->getPermissoes();
+        $cargoModel = Cargo::query()->findOrFail($id);
+        $this->authorize('update', $cargoModel);
 
-        abort_unless($permissoes['pode_editar'], 403);
+        $permissoes = $this->getPermissoes();
 
         $cargo = DB::table('cargos')
             ->where('id', $id)
@@ -354,9 +358,9 @@ class CargosController extends Controller
 
     public function setoresPorFiliais(Request $request)
     {
-        $permissoes = $this->getPermissoes();
+        $this->authorize('viewAny', Cargo::class);
 
-        abort_unless($permissoes['pode_ler'], 403);
+        $permissoes = $this->getPermissoes();
 
         $filiais = collect((array) $request->filiais)
             ->filter()
@@ -376,9 +380,10 @@ class CargosController extends Controller
     public function show($id)
     {
         try {
-            $permissoes = $this->getPermissoes();
+            $cargoModel = Cargo::query()->findOrFail($id);
+            $this->authorize('view', $cargoModel);
 
-            abort_unless($permissoes['pode_ler'], 403);
+            $permissoes = $this->getPermissoes();
 
             $cargo = DB::table('cargos as c')
                 ->leftJoin('cargos_cbo as cbo', 'cbo.id', '=', 'c.cargo_cbo_id')
@@ -436,38 +441,11 @@ class CargosController extends Controller
         }
     }
 
-    public function store(Request $request)
+    public function store(StoreCargoRequest $request)
     {
+        $this->authorize('create', Cargo::class);
+
         $permissoes = $this->getPermissoes();
-
-        abort_unless($permissoes['pode_gravar'], 403);
-
-        $request->validate([
-            'titulo_cargo' => ['required', 'string', 'max:255'],
-            'codigo_importacao' => ['nullable', 'string', 'max:100'],
-            'cargo_cbo_id' => ['required', 'integer', 'exists:cargos_cbo,id'],
-            'filiais' => ['required', 'array', 'min:1'],
-            'filiais.*' => ['integer', 'exists:empresa_filial,id'],
-            'setores' => ['required', 'array', 'min:1'],
-            'setores.*' => ['integer', 'exists:empresa_setores,id'],
-            'riscos' => ['nullable', 'array'],
-            'riscos.*' => ['integer', 'exists:sst_riscos,id'],
-            'responsabilidades' => ['nullable', 'array'],
-            'responsabilidades.*' => ['integer', 'exists:cargos_responsabilidades,id'],
-            'competencias_payload' => ['nullable', 'array'],
-            'competencias_payload.*.competencia_id' => ['nullable', 'integer', 'exists:cargos_competencias,id'],
-            'competencias_payload.*.nota' => ['nullable', 'integer', 'min:0', 'max:10'],
-            'formacoes_payload' => ['nullable', 'array'],
-            'formacoes_payload.*.formacao_id' => ['nullable', 'integer', 'exists:cargos_formacoes,id'],
-            'formacoes_payload.*.tipo' => ['nullable', 'in:desejado,obrigatorio'],
-            'cursos_payload' => ['nullable', 'array'],
-            'cursos_payload.*.curso_id' => ['nullable', 'integer', 'exists:cargos_cursos,id'],
-            'cursos_payload.*.tipo' => ['nullable', 'in:desejado,obrigatorio'],
-            'escolaridades_payload' => ['nullable', 'array'],
-            'escolaridades_payload.*.escolaridade_id' => ['nullable', 'integer', 'exists:cargos_escolaridades,id'],
-            'escolaridades_payload.*.tipo' => ['nullable', 'in:desejado,obrigatorio'],
-            'conta_base_jovem_aprendiz' => ['nullable'],
-        ]);
 
         $filiaisIds = collect((array) $request->filiais)->map(fn ($item) => (int) $item)->unique()->all();
         $setoresIds = collect((array) $request->setores)->map(fn ($item) => (int) $item)->unique()->all();
@@ -544,38 +522,12 @@ class CargosController extends Controller
         }
     }
 
-    public function update(Request $request, $id)
+    public function update(UpdateCargoRequest $request, $id)
     {
+        $cargoModel = Cargo::query()->findOrFail($id);
+        $this->authorize('update', $cargoModel);
+
         $permissoes = $this->getPermissoes();
-
-        abort_unless($permissoes['pode_editar'], 403);
-
-        $request->validate([
-            'titulo_cargo' => ['required', 'string', 'max:255'],
-            'codigo_importacao' => ['nullable', 'string', 'max:100'],
-            'cargo_cbo_id' => ['required', 'integer', 'exists:cargos_cbo,id'],
-            'filiais' => ['required', 'array', 'min:1'],
-            'filiais.*' => ['integer', 'exists:empresa_filial,id'],
-            'setores' => ['required', 'array', 'min:1'],
-            'setores.*' => ['integer', 'exists:empresa_setores,id'],
-            'riscos' => ['nullable', 'array'],
-            'riscos.*' => ['integer', 'exists:sst_riscos,id'],
-            'responsabilidades' => ['nullable', 'array'],
-            'responsabilidades.*' => ['integer', 'exists:cargos_responsabilidades,id'],
-            'competencias_payload' => ['nullable', 'array'],
-            'competencias_payload.*.competencia_id' => ['nullable', 'integer', 'exists:cargos_competencias,id'],
-            'competencias_payload.*.nota' => ['nullable', 'integer', 'min:0', 'max:10'],
-            'formacoes_payload' => ['nullable', 'array'],
-            'formacoes_payload.*.formacao_id' => ['nullable', 'integer', 'exists:cargos_formacoes,id'],
-            'formacoes_payload.*.tipo' => ['nullable', 'in:desejado,obrigatorio'],
-            'cursos_payload' => ['nullable', 'array'],
-            'cursos_payload.*.curso_id' => ['nullable', 'integer', 'exists:cargos_cursos,id'],
-            'cursos_payload.*.tipo' => ['nullable', 'in:desejado,obrigatorio'],
-            'escolaridades_payload' => ['nullable', 'array'],
-            'escolaridades_payload.*.escolaridade_id' => ['nullable', 'integer', 'exists:cargos_escolaridades,id'],
-            'escolaridades_payload.*.tipo' => ['nullable', 'in:desejado,obrigatorio'],
-            'conta_base_jovem_aprendiz' => ['nullable'],
-        ]);
 
         $filiaisIds = collect((array) $request->filiais)->map(fn ($item) => (int) $item)->unique()->all();
         $setoresIds = collect((array) $request->setores)->map(fn ($item) => (int) $item)->unique()->all();
@@ -639,9 +591,10 @@ class CargosController extends Controller
     public function delete($id)
     {
         try {
-            $permissoes = $this->getPermissoes();
+            $cargoModel = Cargo::query()->findOrFail($id);
+            $this->authorize('delete', $cargoModel);
 
-            abort_unless($permissoes['pode_excluir'], 403);
+            $permissoes = $this->getPermissoes();
 
             DB::beginTransaction();
 

@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\Gestao\Empresa;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Empresa\StoreEmpresaFilialRequest;
+use App\Http\Requests\Empresa\UpdateEmpresaFilialRequest;
 use App\Models\EmpresaCnae;
 use App\Models\EmpresaFilial;
 use App\Models\EmpresaNatJuridica;
@@ -16,14 +18,14 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
-use Illuminate\Validation\Rule;
-use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
 class EmpresaFilialController extends Controller
 {
     public function index(Request $request): View
     {
+        $this->authorize('viewAny', EmpresaFilial::class);
+
         $query = EmpresaFilial::query()
             ->with([
                 'porte:id,descricao',
@@ -56,6 +58,8 @@ class EmpresaFilialController extends Controller
 
     public function create(): View
     {
+        $this->authorize('create', EmpresaFilial::class);
+
         $portes = EmpresaPorte::query()
             ->orderBy('codigo')
             ->get(['id', 'codigo', 'descricao']);
@@ -77,18 +81,11 @@ class EmpresaFilialController extends Controller
         ]);
     }
 
-    public function store(Request $request): RedirectResponse
+    public function store(StoreEmpresaFilialRequest $request): RedirectResponse
     {
-        $data = $this->normalizePayload($request);
+        $this->authorize('create', EmpresaFilial::class);
 
-        $validated = validator(
-            $data,
-            $this->rules(),
-            $this->messages(),
-            $this->attributes()
-        )->validate();
-
-        $this->validateGeography($validated);
+        $validated = $request->validated();
 
         $filial = null;
 
@@ -116,6 +113,8 @@ class EmpresaFilialController extends Controller
                 'cidade:id,nome,estado_id',
             ])
             ->findOrFail($id);
+
+        $this->authorize('view', $filial);
 
         $portes = EmpresaPorte::query()
             ->orderBy('codigo')
@@ -159,20 +158,11 @@ class EmpresaFilialController extends Controller
         ));
     }
 
-    public function update(Request $request, int $id): RedirectResponse
+    public function update(UpdateEmpresaFilialRequest $request, int $id): RedirectResponse
     {
         $filial = EmpresaFilial::query()->findOrFail($id);
-
-        $data = $this->normalizePayload($request);
-
-        $validated = validator(
-            $data,
-            $this->rules($filial->id),
-            $this->messages(),
-            $this->attributes()
-        )->validate();
-
-        $this->validateGeography($validated);
+        $this->authorize('update', $filial);
+        $validated = $request->validated();
 
         DB::transaction(function () use ($filial, $validated, $request) {
             $filial->update($validated);
@@ -190,6 +180,7 @@ class EmpresaFilialController extends Controller
     public function destroy(int $id): RedirectResponse
     {
         $filial = EmpresaFilial::query()->findOrFail($id);
+        $this->authorize('delete', $filial);
         $filial->delete();
 
         return redirect()
@@ -199,6 +190,8 @@ class EmpresaFilialController extends Controller
 
     public function estadosPorPais(int $paisId): JsonResponse
     {
+        $this->authorize('viewAny', EmpresaFilial::class);
+
         $estados = GestaoEstado::query()
             ->where('pais_id', $paisId)
             ->orderBy('nome')
@@ -209,6 +202,8 @@ class EmpresaFilialController extends Controller
 
     public function cidadesPorEstado(int $estadoId): JsonResponse
     {
+        $this->authorize('viewAny', EmpresaFilial::class);
+
         $cidades = GestaoCidade::query()
             ->where('estado_id', $estadoId)
             ->orderBy('nome')
@@ -219,6 +214,8 @@ class EmpresaFilialController extends Controller
 
     public function buscarPortePorCodigo(string $codigo): JsonResponse
     {
+        $this->authorize('viewAny', EmpresaFilial::class);
+
         $porte = EmpresaPorte::query()
             ->where('codigo', $codigo)
             ->first(['id', 'codigo', 'descricao']);
@@ -231,6 +228,8 @@ class EmpresaFilialController extends Controller
 
     public function buscarNaturezaPorCodigo(string $codigo): JsonResponse
     {
+        $this->authorize('viewAny', EmpresaFilial::class);
+
         $natureza = EmpresaNatJuridica::query()
             ->where('codigo', $codigo)
             ->first(['id', 'codigo', 'descricao']);
@@ -243,6 +242,8 @@ class EmpresaFilialController extends Controller
 
     public function buscarCnaePorSubclasse(string $subclasse): JsonResponse
     {
+        $this->authorize('viewAny', EmpresaFilial::class);
+
         $subclasse = $this->normalizeCnae($subclasse);
 
         $cnae = EmpresaCnae::query()
@@ -258,6 +259,7 @@ class EmpresaFilialController extends Controller
     public function adicionarCnae(Request $request, int $filialId): JsonResponse
     {
         $filial = EmpresaFilial::query()->findOrFail($filialId);
+        $this->authorize('update', $filial);
 
         $validated = $request->validate([
             'subclasse' => ['required', 'string', 'max:15'],
@@ -308,7 +310,8 @@ class EmpresaFilialController extends Controller
 
     public function atualizarPrincipalCnae(Request $request, int $vinculoId): JsonResponse
     {
-        $vinculo = VinculoFilialXCnae::query()->findOrFail($vinculoId);
+        $vinculo = VinculoFilialXCnae::query()->with('filial')->findOrFail($vinculoId);
+        $this->authorize('update', $vinculo->filial);
 
         $validated = $request->validate([
             'principal' => ['required', 'boolean'],
@@ -336,7 +339,8 @@ class EmpresaFilialController extends Controller
 
     public function removerCnae(int $vinculoId): JsonResponse
     {
-        $vinculo = VinculoFilialXCnae::query()->findOrFail($vinculoId);
+        $vinculo = VinculoFilialXCnae::query()->with('filial')->findOrFail($vinculoId);
+        $this->authorize('update', $vinculo->filial);
         $filialId = $vinculo->filial_id;
 
         $vinculo->delete();
@@ -350,6 +354,8 @@ class EmpresaFilialController extends Controller
 
     public function consultarCnpj(string $cnpj): JsonResponse
     {
+        $this->authorize('viewAny', EmpresaFilial::class);
+
         $cnpj = $this->onlyNumbers($cnpj);
 
         if (strlen($cnpj) !== 14) {
