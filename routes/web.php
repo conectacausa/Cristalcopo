@@ -22,6 +22,7 @@ use App\Http\Controllers\Sst\RiscosController;
 
 use App\Http\Controllers\Pessoas\Colaboradores\ColaboradoresController;
 use App\Http\Controllers\Configuracao\Importar\ImportarColaboradoresController;
+use App\Http\Controllers\Configuracao\PaisController;
 
 use App\Http\Controllers\Avaliacoes\Desempenho\CicloAvaliacaoController;
 use App\Http\Controllers\Avaliacoes\Desempenho\PilarAvaliacaoController;
@@ -182,6 +183,25 @@ Route::middleware(['auth', 'user.active'])->group(function () {
 
             Route::get('/', [ConfiguracaoFluxoController::class, 'index'])->name('index');
             Route::post('/store', [ConfiguracaoFluxoController::class, 'store'])->name('store');
+        });
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | CONFIGURAÇÃO - PAÍS
+    |--------------------------------------------------------------------------
+    */
+    Route::prefix('configuracao/pais')
+        ->name('configuracao.pais.')
+        ->middleware('screen:configuracao/pais')
+        ->group(function () {
+
+            Route::get('/', [PaisController::class, 'index'])->name('index');
+            Route::get('/list', [PaisController::class, 'list'])->name('list');
+            Route::post('/store', [PaisController::class, 'store'])->name('store');
+            Route::get('/edit/{id}', [PaisController::class, 'edit'])->name('edit');
+            Route::post('/update/{id}', [PaisController::class, 'update'])->name('update');
+            Route::delete('/delete/{id}', [PaisController::class, 'delete'])->name('delete');
         });
 
 
